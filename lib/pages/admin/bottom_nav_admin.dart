@@ -18,7 +18,7 @@ class _BottomNavAdminState extends State<BottomNavAdmin> {
   final List<Widget> _pages = [
     const DashboardAdmin(),
     const WoroWoroAdmin(),
-    const SambatAdmin(),
+    const LaporanAdmin(),
     const UsersAdmin(),
   ];
 

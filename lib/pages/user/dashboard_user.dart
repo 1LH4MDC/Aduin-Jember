@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../core/theme.dart';
 import '../sambat/create_sambat_page.dart';
 import '../sambat/my_sambat_page.dart';
+import 'woro_woro_detail_page.dart'; // Import halaman detail yang baru dibuat
 
 class DashboardUser extends StatelessWidget {
   const DashboardUser({super.key});
@@ -33,7 +34,7 @@ class DashboardUser extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 12),
-            _buildWoroWoroList(),
+            _buildWoroWoroList(context), // Diperbarui: Kirim context ke fungsi list
             const SizedBox(height: 24),
 
             // 3. Fitur Utama
@@ -116,9 +117,9 @@ class DashboardUser extends StatelessWidget {
   }
 
   // --- KOMPONEN WORO-WORO (HORIZONTAL SCROLL) ---
-  Widget _buildWoroWoroList() {
+  Widget _buildWoroWoroList(BuildContext context) { // Diperbarui: Menerima BuildContext
     final List<Map<String, String>> dummyWoro = [
-      {'date': '15 Okt 2023', 'title': 'Perbaikan Jalan Selesai'},
+      {'date': '15 Okt 2023', 'title': 'Perbaikan Jalan Selesai di Area Sumbersari'},
       {'date': '12 Okt 2023', 'title': 'Festival Jember Nusantara'},
     ];
 
@@ -130,64 +131,79 @@ class DashboardUser extends StatelessWidget {
         itemCount: dummyWoro.length,
         itemBuilder: (context, index) {
           final item = dummyWoro[index];
-          return Container(
-            width: 240, // Lebar card
-            margin: const EdgeInsets.only(right: 16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.grey.withValues(alpha: 0.2)),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Bagian Gambar Placeholder (Abu-abu seperti referensi)
-                Container(
-                  height: 100,
-                  decoration: const BoxDecoration(
-                    color: Color(0xFFE0E0E0), // Warna placeholder gambar
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(12),
-                      topRight: Radius.circular(12),
-                    ),
-                  ),
-                  child: const Center(
-                    child: Icon(
-                      Icons.image_outlined,
-                      color: Colors.grey,
-                      size: 40,
-                    ),
+          return InkWell(
+            onTap: () {
+              // Navigasi ke Halaman Detail Woro-Woro saat kartu diklik
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => WoroWoroDetailPage(
+                    title: item['title']!,
+                    date: item['date']!,
                   ),
                 ),
-                // Bagian Teks
-                Padding(
-                  padding: const EdgeInsets.all(12.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        item['date']!,
-                        style: const TextStyle(
-                          color: AppTheme.primaryColor,
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                        ),
+              );
+            },
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              width: 240, // Lebar card
+              margin: const EdgeInsets.only(right: 16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey.withValues(alpha: 0.2)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Bagian Gambar Placeholder (Abu-abu seperti referensi)
+                  Container(
+                    height: 100,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFE0E0E0), // Warna placeholder gambar
+                      borderRadius: BorderRadius.only(
+                        topLeft: Radius.circular(12),
+                        topRight: Radius.circular(12),
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        item['title']!,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                          color: AppTheme.textPrimary,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                    ),
+                    child: const Center(
+                      child: Icon(
+                        Icons.image_outlined,
+                        color: Colors.grey,
+                        size: 40,
                       ),
-                    ],
+                    ),
                   ),
-                ),
-              ],
+                  // Bagian Teks
+                  Padding(
+                    padding: const EdgeInsets.all(12.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          item['date']!,
+                          style: const TextStyle(
+                            color: AppTheme.primaryColor,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          item['title']!,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                            color: AppTheme.textPrimary,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
           );
         },

@@ -1,3 +1,5 @@
+import 'package:aduin_jember/pages/admin/bottom_nav_admin.dart';
+import 'package:aduin_jember/pages/user/bottom_nav.dart';
 import 'package:device_preview/device_preview.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -31,7 +33,7 @@ class AduinJemberApp extends StatelessWidget {
         title: 'Aduin Jember',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.lightTheme,
-        home: const AuthGate(),
+        home: const BottomNav(),
       ),
     );
   }
