@@ -3,11 +3,15 @@ import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
   // 1. Definisi Palet Warna (Berdasarkan UI/UX)
-  static const Color primaryColor = Color(0xFF0C344D);    // Deep Blue Jember
-  static const Color secondaryColor = Color(0xFF1A6B9A);  // Light Blue Accent
-  static const Color backgroundColor = Color(0xFFF5F7FA); // Light Grey (Background Form)
-  static const Color errorColor = Color(0xFFD32F2F);      // Merah (Untuk Gawat / Logout)
-  static const Color textPrimary = Color(0xFF333333);     // Teks Utama
+  static const Color primaryColor = Color(0xFF0C344D); // Deep Blue Jember
+  static const Color secondaryColor = Color(0xFF1A6B9A); // Light Blue Accent
+  static const Color backgroundColor = Color(
+    0xFFF5F7FA,
+  ); // Light Grey (Background Form)
+  static const Color errorColor = Color(
+    0xFFD32F2F,
+  ); // Merah (Untuk Gawat / Logout)
+  static const Color textPrimary = Color(0xFF333333); // Teks Utama
 
   // 2. Konfigurasi Tema Global
   static ThemeData get lightTheme {
@@ -15,7 +19,7 @@ class AppTheme {
       primaryColor: primaryColor,
       scaffoldBackgroundColor: Colors.white,
       colorScheme: ColorScheme.fromSeed(seedColor: primaryColor),
-      
+
       // Menggunakan Google Fonts (Poppins memberikan kesan modern & clean)
       textTheme: GoogleFonts.poppinsTextTheme(),
 
@@ -35,7 +39,10 @@ class AppTheme {
           borderRadius: BorderRadius.circular(10.0),
           borderSide: const BorderSide(color: primaryColor, width: 2.0),
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 16,
+        ),
       ),
 
       // Styling Bawaan untuk Tombol Utama (Elevated Button)
@@ -48,10 +55,7 @@ class AppTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10.0),
           ),
-          textStyle: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
+          textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         ),
       ),
     );

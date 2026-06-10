@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../core/theme.dart';
+import '../sambat/create_sambat_page.dart';
+import '../sambat/my_sambat_page.dart';
 
 class DashboardUser extends StatelessWidget {
   const DashboardUser({super.key});
@@ -16,7 +18,7 @@ class DashboardUser extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 10),
-            
+
             // 1. Search Bar
             _buildSearchBar(),
             const SizedBox(height: 24),
@@ -44,7 +46,7 @@ class DashboardUser extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 12),
-            _buildFiturUtama(),
+            _buildFiturUtama(context),
             const SizedBox(height: 24),
 
             // 4. Gawat (SOS)
@@ -63,7 +65,11 @@ class DashboardUser extends StatelessWidget {
       elevation: 0,
       centerTitle: true,
       leading: IconButton(
-        icon: const Icon(Icons.account_circle_outlined, color: Colors.black87, size: 28),
+        icon: const Icon(
+          Icons.account_circle_outlined,
+          color: Colors.black87,
+          size: 28,
+        ),
         onPressed: () {},
       ),
       title: const Column(
@@ -99,7 +105,7 @@ class DashboardUser extends StatelessWidget {
       ),
       child: const TextField(
         decoration: InputDecoration(
-          hintText: 'Cari informasi atau laporan...',
+          hintText: 'Cari informasi atau sambat...',
           hintStyle: TextStyle(color: Colors.grey, fontSize: 14),
           prefixIcon: Icon(Icons.search, color: Colors.grey),
           border: InputBorder.none,
@@ -112,14 +118,8 @@ class DashboardUser extends StatelessWidget {
   // --- KOMPONEN WORO-WORO (HORIZONTAL SCROLL) ---
   Widget _buildWoroWoroList() {
     final List<Map<String, String>> dummyWoro = [
-      {
-        'date': '15 Okt 2023',
-        'title': 'Perbaikan Jalan Selesai',
-      },
-      {
-        'date': '12 Okt 2023',
-        'title': 'Festival Jember Nusantara',
-      },
+      {'date': '15 Okt 2023', 'title': 'Perbaikan Jalan Selesai'},
+      {'date': '12 Okt 2023', 'title': 'Festival Jember Nusantara'},
     ];
 
     return SizedBox(
@@ -152,7 +152,11 @@ class DashboardUser extends StatelessWidget {
                     ),
                   ),
                   child: const Center(
-                    child: Icon(Icons.image_outlined, color: Colors.grey, size: 40),
+                    child: Icon(
+                      Icons.image_outlined,
+                      color: Colors.grey,
+                      size: 40,
+                    ),
                   ),
                 ),
                 // Bagian Teks
@@ -192,7 +196,7 @@ class DashboardUser extends StatelessWidget {
   }
 
   // --- KOMPONEN FITUR UTAMA (SAMBAT & TRACKING) ---
-  Widget _buildFiturUtama() {
+  Widget _buildFiturUtama(BuildContext context) {
     return Row(
       children: [
         // Card Sambat
@@ -204,11 +208,23 @@ class DashboardUser extends StatelessWidget {
               children: [
                 Icon(Icons.camera_alt_outlined, color: Colors.white, size: 28),
                 SizedBox(width: 4),
-                Icon(Icons.insert_drive_file_outlined, color: Colors.white, size: 24),
+                Icon(
+                  Icons.insert_drive_file_outlined,
+                  color: Colors.white,
+                  size: 24,
+                ),
               ],
             ),
             title: 'SAMBAT',
             subtitle: 'Lapor Jalan Rusak, Sampah, dll',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute<void>(
+                  builder: (_) => const CreateSambatPage(),
+                ),
+              );
+            },
           ),
         ),
         const SizedBox(width: 16),
@@ -217,9 +233,19 @@ class DashboardUser extends StatelessWidget {
           child: _buildFiturCard(
             backgroundColor: const Color(0xFFE4E6FB), // Warna ungu/biru pudar
             textColor: AppTheme.primaryColor,
-            iconRow: const Icon(Icons.manage_search_rounded, color: AppTheme.primaryColor, size: 32),
+            iconRow: const Icon(
+              Icons.manage_search_rounded,
+              color: AppTheme.primaryColor,
+              size: 32,
+            ),
             title: 'TRACKING',
-            subtitle: 'Pantau kemajuan laporan Anda',
+            subtitle: 'Pantau kemajuan sambat Anda',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute<void>(builder: (_) => const MySambatPage()),
+              );
+            },
           ),
         ),
       ],
@@ -232,37 +258,44 @@ class DashboardUser extends StatelessWidget {
     required Widget iconRow,
     required String title,
     required String subtitle,
+    required VoidCallback onTap,
   }) {
-    return Container(
-      height: 160,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: backgroundColor,
+    return Material(
+      color: backgroundColor,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
         borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          iconRow,
-          const Spacer(),
-          Text(
-            title,
-            style: TextStyle(
-              color: textColor,
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
+        onTap: onTap,
+        child: SizedBox(
+          height: 160,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                iconRow,
+                const Spacer(),
+                Text(
+                  title,
+                  style: TextStyle(
+                    color: textColor,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    color: textColor.withValues(alpha: 0.8),
+                    fontSize: 11,
+                  ),
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 6),
-          Text(
-            subtitle,
-            style: TextStyle(
-              color: textColor.withValues(alpha: 0.8),
-              fontSize: 11,
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -311,10 +344,7 @@ class DashboardUser extends StatelessWidget {
                 SizedBox(height: 4),
                 Text(
                   'Hanya untuk situasi mengancam jiwa\n(Kecelakaan, Kriminal)',
-                  style: TextStyle(
-                    color: Colors.white70,
-                    fontSize: 11,
-                  ),
+                  style: TextStyle(color: Colors.white70, fontSize: 11),
                 ),
               ],
             ),

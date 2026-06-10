@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../core/theme.dart';
 import 'dashboard_admin.dart';
 import 'woro_woro_admin.dart';
-import 'laporan_admin.dart';
+import 'sambat_admin.dart';
 import 'users_admin.dart';
 
 class BottomNavAdmin extends StatefulWidget {
@@ -18,17 +18,14 @@ class _BottomNavAdminState extends State<BottomNavAdmin> {
   final List<Widget> _pages = [
     const DashboardAdmin(),
     const WoroWoroAdmin(),
-    const LaporanAdmin(),
+    const SambatAdmin(),
     const UsersAdmin(),
   ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack(
-        index: _selectedIndex,
-        children: _pages,
-      ),
+      body: IndexedStack(index: _selectedIndex, children: _pages),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           boxShadow: [
@@ -50,7 +47,11 @@ class _BottomNavAdminState extends State<BottomNavAdmin> {
             }),
             labelTextStyle: WidgetStateProperty.resolveWith((states) {
               if (states.contains(WidgetState.selected)) {
-                return const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppTheme.primaryColor);
+                return const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.primaryColor,
+                );
               }
               return const TextStyle(fontSize: 11, color: Colors.grey);
             }),
@@ -67,10 +68,26 @@ class _BottomNavAdminState extends State<BottomNavAdmin> {
               });
             },
             destinations: const [
-              NavigationDestination(icon: Icon(Icons.dashboard_outlined), selectedIcon: Icon(Icons.dashboard), label: 'Dashboard'),
-              NavigationDestination(icon: Icon(Icons.campaign_outlined), selectedIcon: Icon(Icons.campaign), label: 'Woro-Woro'),
-              NavigationDestination(icon: Icon(Icons.description_outlined), selectedIcon: Icon(Icons.description), label: 'Laporan'),
-              NavigationDestination(icon: Icon(Icons.people_outline), selectedIcon: Icon(Icons.people), label: 'Users'),
+              NavigationDestination(
+                icon: Icon(Icons.dashboard_outlined),
+                selectedIcon: Icon(Icons.dashboard),
+                label: 'Dashboard',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.campaign_outlined),
+                selectedIcon: Icon(Icons.campaign),
+                label: 'Woro-Woro',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.description_outlined),
+                selectedIcon: Icon(Icons.description),
+                label: 'Sambat',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.people_outline),
+                selectedIcon: Icon(Icons.people),
+                label: 'Users',
+              ),
             ],
           ),
         ),

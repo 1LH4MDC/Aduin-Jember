@@ -7,14 +7,20 @@ class DashboardAdmin extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA), // Latar belakang abu-abu sangat muda bersih
+      backgroundColor: const Color(
+        0xFFF8F9FA,
+      ), // Latar belakang abu-abu sangat muda bersih
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
         title: const Text(
           'Aduin Jember',
-          style: TextStyle(color: AppTheme.primaryColor, fontWeight: FontWeight.bold, fontSize: 20),
+          style: TextStyle(
+            color: AppTheme.primaryColor,
+            fontWeight: FontWeight.bold,
+            fontSize: 20,
+          ),
         ),
       ),
       body: SingleChildScrollView(
@@ -26,7 +32,11 @@ class DashboardAdmin extends StatelessWidget {
             // 1. Salam Admin
             const Text(
               'Halo, Admin!',
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppTheme.textPrimary),
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: AppTheme.textPrimary,
+              ),
             ),
             const SizedBox(height: 4),
             const Text(
@@ -42,19 +52,20 @@ class DashboardAdmin extends StatelessWidget {
               physics: const NeverScrollableScrollPhysics(),
               mainAxisSpacing: 16,
               crossAxisSpacing: 16,
-              childAspectRatio: 1.2, // Mengatur proporsi kotak agar tidak terlalu tinggi
+              childAspectRatio:
+                  1.2, // Mengatur proporsi kotak agar tidak terlalu tinggi
               children: [
                 _buildStatCard(
                   icon: Icons.description,
                   iconColor: AppTheme.primaryColor,
-                  label: 'Total Laporan\nMasuk',
+                  label: 'Total Sambat\nMasuk',
                   count: '7',
                   badgeColor: const Color(0xFFE4E6FB),
                 ),
                 _buildStatCard(
                   icon: Icons.emergency,
                   iconColor: const Color(0xFFB71C1C),
-                  label: 'Laporan Darurat /\nGawat',
+                  label: 'Sambat Darurat /\nGawat',
                   count: '1',
                   badgeColor: const Color(0xFFFFEBEE),
                   isEmergency: true,
@@ -77,39 +88,47 @@ class DashboardAdmin extends StatelessWidget {
             ),
             const SizedBox(height: 28),
 
-            // 3. Header Laporan Terbaru
+            // 3. Header Sambat Terbaru
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text(
-                  'Laporan Terbaru',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.textPrimary),
+                  'Sambat Terbaru',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.textPrimary,
+                  ),
                 ),
                 TextButton(
                   onPressed: () {},
                   child: const Text(
                     'LIHAT SEMUA',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.primaryColor),
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
+                      color: AppTheme.primaryColor,
+                    ),
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 10),
 
-            // 4. List Laporan
-            _buildRecentReportItem(
+            // 4. List Sambat
+            _buildRecentSambatItem(
               title: 'Jalan Berlubang di...',
               date: '24 Okt 2023, 10:30 WIB',
               statusText: 'Menunggu',
               statusColor: Colors.orange,
             ),
-            _buildRecentReportItem(
+            _buildRecentSambatItem(
               title: 'Lampu PJU Mati di Kaliwates',
               date: '23 Okt 2023, 19:15 WIB',
               statusText: 'Diproses',
               statusColor: Colors.blue,
             ),
-            _buildRecentReportItem(
+            _buildRecentSambatItem(
               title: 'Pohon Tumbang Jl. Hayam...',
               date: '22 Okt 2023, 08:45 WIB',
               statusText: 'Selesai',
@@ -168,7 +187,9 @@ class DashboardAdmin extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: isEmergency ? const Color(0xFFB71C1C) : AppTheme.textPrimary,
+                  color: isEmergency
+                      ? const Color(0xFFB71C1C)
+                      : AppTheme.textPrimary,
                 ),
               ),
             ),
@@ -185,7 +206,9 @@ class DashboardAdmin extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
-                      color: isEmergency ? const Color(0xFFB71C1C) : Colors.black87,
+                      color: isEmergency
+                          ? const Color(0xFFB71C1C)
+                          : Colors.black87,
                       height: 1.3,
                     ),
                   ),
@@ -199,7 +222,7 @@ class DashboardAdmin extends StatelessWidget {
   }
 
   // --- WIDGET HELPER: BARIS LIST LAPORAN TERBARU ---
-  Widget _buildRecentReportItem({
+  Widget _buildRecentSambatItem({
     required String title,
     required String date,
     required String statusText,
@@ -222,21 +245,29 @@ class DashboardAdmin extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Bagian Kiri: Judul & Tanggal Laporan
+          // Bagian Kiri: Judul & Tanggal Sambat
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   title,
-                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppTheme.textPrimary),
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.textPrimary,
+                  ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    const Icon(Icons.calendar_today_outlined, size: 14, color: Colors.grey),
+                    const Icon(
+                      Icons.calendar_today_outlined,
+                      size: 14,
+                      color: Colors.grey,
+                    ),
                     const SizedBox(width: 6),
                     Text(
                       date,
@@ -257,7 +288,11 @@ class DashboardAdmin extends StatelessWidget {
             ),
             child: Text(
               statusText,
-              style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: statusColor),
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+                color: statusColor,
+              ),
             ),
           ),
         ],
