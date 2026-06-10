@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../core/theme.dart';
-import 'register_page.dart'; // Import halaman register untuk navigasi
+import 'register_page.dart'; 
+import '../user/bottom_nav.dart'; // Sudah ditambahkan
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -10,11 +11,8 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  // Controller untuk mengambil input dari form
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  
-  // State untuk toggle mata password (hide/show)
   bool _isObscure = true;
 
   @override
@@ -46,7 +44,7 @@ class _LoginPageState extends State<LoginPage> {
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: const Icon(
-                      Icons.account_balance, // Bisa diganti aset logo asli nanti
+                      Icons.account_balance, 
                       color: Colors.white,
                       size: 40,
                     ),
@@ -100,7 +98,7 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                       onPressed: () {
                         setState(() {
-                          _isObscure = !_isObscure; // Mengubah state visibility
+                          _isObscure = !_isObscure; 
                         });
                       },
                     ),
@@ -126,14 +124,20 @@ class _LoginPageState extends State<LoginPage> {
                 ),
                 const SizedBox(height: 24),
 
-                // 6. Tombol Login
+                // 6. Tombol Login (Sudah diperbarui dengan Navigasi)
                 ElevatedButton(
                   onPressed: () {
-                    // TODO: Panggil API POST /api/auth/login di sini
                     final email = _emailController.text;
                     final password = _passwordController.text;
-                    // Debug print diperbaiki agar variabel password terpakai dan warning hilang
                     debugPrint('Login tapped: $email, Password Length: ${password.length}'); 
+
+                    // Pindah ke BottomNav dan hapus tumpukan halamannya
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const BottomNav(),
+                      ),
+                    );
                   },
                   child: const Text('Login'),
                 ),
@@ -148,8 +152,7 @@ class _LoginPageState extends State<LoginPage> {
                       style: TextStyle(color: Colors.grey),
                     ),
                     GestureDetector(
-                      onTap: () { // Diganti menjadi onTap
-                        // Navigasi ke halaman Register
+                      onTap: () { 
                         Navigator.push(
                           context,
                           MaterialPageRoute(

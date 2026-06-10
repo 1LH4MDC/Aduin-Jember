@@ -2,7 +2,6 @@ import 'package:aduin_jember/services/auth_service.dart';
 import 'package:flutter/material.dart';
 import '../../core/theme.dart';
 
-
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
 
@@ -11,10 +10,10 @@ class RegisterPage extends StatefulWidget {
 }
 
 class _RegisterPageState extends State<RegisterPage> {
-  // Controller untuk menangkap input data
+  // Controller untuk menangkap input data (Nomor Telepon diganti NIK)
   final TextEditingController _namaController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _phoneController = TextEditingController();
+  final TextEditingController _nikController = TextEditingController(); // Perubahan di sini
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController = TextEditingController();
 
@@ -29,7 +28,7 @@ class _RegisterPageState extends State<RegisterPage> {
   void dispose() {
     _namaController.dispose();
     _emailController.dispose();
-    _phoneController.dispose();
+    _nikController.dispose(); // Perubahan di sini
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
@@ -52,7 +51,7 @@ class _RegisterPageState extends State<RegisterPage> {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04), // Perbaikan warning .withOpacity
+            color: Colors.black.withValues(alpha: 0.04), 
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -157,11 +156,12 @@ class _RegisterPageState extends State<RegisterPage> {
                 controller: _emailController,
                 keyboardType: TextInputType.emailAddress,
               ),
+              // Perubahan: Form Input NIK
               _buildInputCard(
-                label: 'Nomor Telepon / WA',
-                hint: '0812xxxx',
-                controller: _phoneController,
-                keyboardType: TextInputType.phone,
+                label: 'NIK',
+                hint: 'Masukkan 16 digit NIK',
+                controller: _nikController,
+                keyboardType: TextInputType.number, // Memunculkan keyboard angka
               ),
               _buildInputCard(
                 label: 'Kata Sandi',
@@ -187,15 +187,16 @@ class _RegisterPageState extends State<RegisterPage> {
 
               // 3. Register Button dengan state Loading & API call
               SizedBox(
-                height: 54, // Menjaga ukuran tombol tetap konsisten
+                height: 54, 
                 child: ElevatedButton(
                   onPressed: _isLoading ? null : () async {
                     // Validasi input kosong
                     if (_namaController.text.isEmpty || 
                         _emailController.text.isEmpty || 
+                        _nikController.text.isEmpty || // Tambahan validasi NIK
                         _passwordController.text.isEmpty) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Harap isi data yang wajib (Nama, Email, Sandi)!')),
+                        const SnackBar(content: Text('Harap isi data yang wajib (Nama, Email, NIK, Sandi)!')),
                       );
                       return;
                     }
@@ -208,25 +209,22 @@ class _RegisterPageState extends State<RegisterPage> {
                       return;
                     }
 
-                    // Menjalankan animasi loading
                     setState(() {
                       _isLoading = true;
                     });
 
-                    // Panggil API Register melalui AuthService
+                    // Panggil API Register melalui AuthService (phone diganti nik)
                     bool isSuccess = await AuthService.registerUser(
                       nama: _namaController.text,
                       email: _emailController.text,
-                      phone: _phoneController.text,
+                      nik: _nikController.text, // Perubahan parameter di sini
                       password: _passwordController.text,
                     );
 
-                    // Mematikan animasi loading
                     setState(() {
                       _isLoading = false;
                     });
 
-                    // Cek context.mounted sebelum menggunakan ScaffoldMessenger setelah fungsi async
                     if (context.mounted) {
                       if (isSuccess) {
                         ScaffoldMessenger.of(context).showSnackBar(
@@ -235,7 +233,7 @@ class _RegisterPageState extends State<RegisterPage> {
                             backgroundColor: Colors.green,
                           ),
                         );
-                        Navigator.pop(context); // Kembali ke halaman Login
+                        Navigator.pop(context); 
                       } else {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
@@ -266,8 +264,8 @@ class _RegisterPageState extends State<RegisterPage> {
                     style: TextStyle(color: Colors.grey),
                   ),
                   GestureDetector(
-                    onTap: () { // Perbaikan: diubah menjadi onTap
-                      Navigator.pop(context); // Kembali ke halaman Login
+                    onTap: () { 
+                      Navigator.pop(context); 
                     },
                     child: const Text(
                       'Masuk di sini',

@@ -8,7 +8,7 @@ class AuthService {
   static Future<bool> registerUser({
     required String nama,
     required String email,
-    required String phone,
+    required String nik,
     required String password,
   }) async {
     try {
@@ -20,7 +20,7 @@ class AuthService {
         body: jsonEncode({
           'nama': nama,
           'email': email,
-          'phone': phone, 
+          'nik': nik, 
           'password': password,
         }),
       );
