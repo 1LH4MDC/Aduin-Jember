@@ -1,41 +1,214 @@
-import 'dart:convert';
-import 'package:flutter/foundation.dart'; // Tambahkan import ini untuk debugPrint
-import 'package:http/http.dart' as http;
-import '../core/constants.dart';
+import 'package:flutter/foundation.dart';
 
-class AuthService {
-  // Fungsi untuk Register
-  static Future<bool> registerUser({
-    required String nama,
+import 'api_client.dart';
+
+class AuthController extends ChangeNotifier {
+  AuthController({ApiClient? apiClient})
+    : apiClient = apiClient ?? ApiClient() {
+    _bootstrap();
+  }
+
+  final ApiClient apiClient;
+
+  Map<String, dynamic>? profile;
+  bool isLoading = true;
+  bool isBusy = false;
+  String? errorMessage;
+
+  bool get isAuthenticated =>
+      apiClient.token != null && apiClient.token!.isNotEmpty;
+
+  bool get isAdmin {
+    final value =
+        profile?['is_admin'] ?? profile?['isAdmin'] ?? profile?['role'];
+    if (value is bool) {
+      return value;
+    }
+    return value?.toString().toLowerCase() == 'admin';
+  }
+
+  String get displayName {
+    final candidates = [
+      profile?['nama'],
+      profile?['full_name'],
+      profile?['name'],
+    ];
+
+    for (final candidate in candidates) {
+      if (candidate is String && candidate.trim().isNotEmpty) {
+        return candidate.trim();
+      }
+    }
+
+    final email = profile?['email']?.toString() ?? '';
+    if (email.contains('@')) {
+      return email.split('@').first;
+    }
+
+    return 'Pengguna';
+  }
+
+  String get email => (profile?['email'] ?? '').toString();
+
+  String get userId =>
+      (profile?['idUser'] ?? profile?['id'] ?? profile?['user_id'] ?? '')
+          .toString();
+
+  Future<void> _bootstrap() async {
+    isLoading = true;
+    notifyListeners();
+
+    try {
+      await apiClient.restoreToken();
+      if (apiClient.token == null || apiClient.token!.isEmpty) {
+        profile = null;
+        return;
+      }
+
+      await loadProfile();
+    } catch (error) {
+      errorMessage = error.toString();
+      profile = null;
+      await apiClient.clearToken();
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> loadProfile() async {
+    final response = await apiClient.getJson('/api/profil');
+    profile = _extractDataMap(response);
+  }
+
+  Future<void> signIn({required String email, required String password}) async {
+    isBusy = true;
+    errorMessage = null;
+    notifyListeners();
+
+    try {
+      final response = await apiClient.postJson(
+        '/api/auth/login',
+        authenticated: false,
+        body: {'email': email.trim(), 'password': password},
+      );
+
+      final data = _extractDataMap(response);
+      final token = _readToken(data);
+      if (token == null || token.isEmpty) {
+        throw Exception('Token login tidak ditemukan pada response.');
+      }
+
+      await apiClient.setToken(token);
+      profile = _readProfile(data);
+      if (profile == null) {
+        await loadProfile();
+      }
+    } catch (error) {
+      errorMessage = error.toString();
+      rethrow;
+    } finally {
+      isBusy = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> signUp({
+    required String fullName,
     required String email,
     required String nik,
     required String password,
   }) async {
+    isBusy = true;
+    errorMessage = null;
+    notifyListeners();
+
     try {
-      final response = await http.post(
-        Uri.parse(ApiConstants.registerEndpoint),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode({
-          'nama': nama,
-          'email': email,
-          'nik': nik, 
+      final response = await apiClient.postJson(
+        '/api/auth/register',
+        authenticated: false,
+        body: {
+          'email': email.trim(),
           'password': password,
-        }),
+          'nama': fullName.trim(),
+          'nik': nik.trim(),
+        },
       );
 
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        return true; 
-      } else {
-        // Ganti print menjadi debugPrint
-        debugPrint('Gagal Register: ${response.body}');
-        return false;
+      final data = _extractDataMap(response);
+      final token = _readToken(data);
+      if (token != null && token.isNotEmpty) {
+        await apiClient.setToken(token);
       }
-    } catch (e) {
-      // Ganti print menjadi debugPrint
-      debugPrint('Error Exception: $e');
-      return false;
+
+      profile =
+          _readProfile(data) ??
+          {'nama': fullName.trim(), 'email': email.trim(), 'nik': nik.trim()};
+    } catch (error) {
+      errorMessage = error.toString();
+      rethrow;
+    } finally {
+      isBusy = false;
+      notifyListeners();
     }
+  }
+
+  Future<void> signOut() async {
+    isBusy = true;
+    notifyListeners();
+
+    try {
+      await apiClient.clearToken();
+      profile = null;
+    } finally {
+      isBusy = false;
+      isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Map<String, dynamic> _extractDataMap(dynamic response) {
+    if (response is Map<String, dynamic>) {
+      final data = response['data'];
+      if (data is Map<String, dynamic>) {
+        return data;
+      }
+      return response;
+    }
+
+    return <String, dynamic>{};
+  }
+
+  String? _readToken(Map<String, dynamic> data) {
+    final tokenCandidates = [
+      data['accessToken'],
+      data['access_token'],
+      data['token'],
+      data['jwt'],
+    ];
+
+    for (final candidate in tokenCandidates) {
+      final token = candidate?.toString();
+      if (token != null && token.isNotEmpty) {
+        return token;
+      }
+    }
+
+    return null;
+  }
+
+  Map<String, dynamic>? _readProfile(Map<String, dynamic> data) {
+    final candidates = [data['profile'], data['profil'], data['user'], data];
+
+    for (final candidate in candidates) {
+      if (candidate is Map<String, dynamic>) {
+        return candidate;
+      }
+      if (candidate is Map) {
+        return Map<String, dynamic>.from(candidate);
+      }
+    }
+
+    return null;
   }
 }

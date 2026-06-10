@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
 import '../../core/theme.dart';
-import 'register_page.dart'; 
-import '../user/bottom_nav.dart'; // Sudah ditambahkan
+import '../../services/api_client.dart';
+import '../../services/auth_service.dart';
+import 'register_page.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -13,13 +16,63 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+
   bool _isObscure = true;
+  bool _isLoading = false;
 
   @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
+  }
+
+  Future<void> _submit() async {
+    if (_emailController.text.trim().isEmpty ||
+        _passwordController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Email dan kata sandi wajib diisi.')),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      await context.read<AuthController>().signIn(
+        email: _emailController.text,
+        password: _passwordController.text,
+      );
+    } on ApiException catch (error) {
+      if (mounted) {
+        debugPrint('Login failed (${error.statusCode}): ${error.body}');
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(_loginErrorMessage(error))));
+      }
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(error.toString())));
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  String _loginErrorMessage(ApiException error) {
+    if (error.statusCode == 401 || error.statusCode == 403) {
+      return 'Email atau kata sandi salah.';
+    }
+
+    if (error.isServerError) {
+      return 'Login belum berhasil karena server auth mengembalikan error ${error.statusCode}. Coba lagi nanti atau cek log Railway.';
+    }
+
+    return error.message;
   }
 
   @override
@@ -29,32 +82,28 @@ class _LoginPageState extends State<LoginPage> {
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24.0),
+            padding: const EdgeInsets.all(24),
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // 1. Logo Aplikasi (Placeholder)
                 Center(
                   child: Container(
-                    width: 80,
-                    height: 80,
+                    width: 84,
+                    height: 84,
                     decoration: BoxDecoration(
                       color: AppTheme.primaryColor,
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: BorderRadius.circular(24),
                     ),
                     child: const Icon(
-                      Icons.account_balance, 
+                      Icons.account_balance_outlined,
                       color: Colors.white,
-                      size: 40,
+                      size: 42,
                     ),
                   ),
                 ),
-                const SizedBox(height: 32),
-
-                // 2. Judul & Subjudul
+                const SizedBox(height: 28),
                 const Text(
-                  'Selamat Datang',
+                  'Masuk ke Aduin Jember',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 28,
@@ -64,86 +113,55 @@ class _LoginPageState extends State<LoginPage> {
                 ),
                 const SizedBox(height: 8),
                 const Text(
-                  'Masuk untuk melanjutkan ke Aduin Jember',
+                  'Gunakan email dan kata sandi dari API autentikasi.',
                   textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey,
-                  ),
+                  style: TextStyle(fontSize: 14, color: Colors.grey),
                 ),
                 const SizedBox(height: 40),
-
-                // 3. Form Email / No. Telepon
                 TextFormField(
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
                   decoration: const InputDecoration(
-                    labelText: 'Email atau No. Telepon',
-                    prefixIcon: Icon(Icons.person_outline, color: Colors.grey),
+                    labelText: 'Email',
+                    prefixIcon: Icon(Icons.mail_outline, color: Colors.grey),
                   ),
                 ),
                 const SizedBox(height: 20),
-
-                // 4. Form Kata Sandi dengan Toggle Eye Icon
                 TextFormField(
                   controller: _passwordController,
                   obscureText: _isObscure,
                   decoration: InputDecoration(
                     labelText: 'Kata Sandi',
-                    prefixIcon: const Icon(Icons.lock_outline, color: Colors.grey),
+                    prefixIcon: const Icon(
+                      Icons.lock_outline,
+                      color: Colors.grey,
+                    ),
                     suffixIcon: IconButton(
                       icon: Icon(
                         _isObscure ? Icons.visibility_off : Icons.visibility,
                         color: Colors.grey,
                       ),
                       onPressed: () {
-                        setState(() {
-                          _isObscure = !_isObscure; 
-                        });
+                        setState(() => _isObscure = !_isObscure);
                       },
                     ),
                   ),
                 ),
-                const SizedBox(height: 12),
-
-                // 5. Lupa Kata Sandi
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: TextButton(
-                    onPressed: () {
-                      // TODO: Navigasi ke halaman lupa sandi
-                    },
-                    child: const Text(
-                      'Lupa Kata Sandi?',
-                      style: TextStyle(
-                        color: AppTheme.primaryColor,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ),
                 const SizedBox(height: 24),
-
-                // 6. Tombol Login (Sudah diperbarui dengan Navigasi)
                 ElevatedButton(
-                  onPressed: () {
-                    final email = _emailController.text;
-                    final password = _passwordController.text;
-                    debugPrint('Login tapped: $email, Password Length: ${password.length}'); 
-
-                    // Pindah ke BottomNav dan hapus tumpukan halamannya
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const BottomNav(),
-                      ),
-                    );
-                  },
-                  child: const Text('Login'),
+                  onPressed: _isLoading ? null : _submit,
+                  child: _isLoading
+                      ? const SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2.4,
+                          ),
+                        )
+                      : const Text('Masuk'),
                 ),
-                const SizedBox(height: 32),
-
-                // 7. Teks Daftar Akun
+                const SizedBox(height: 28),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -152,11 +170,11 @@ class _LoginPageState extends State<LoginPage> {
                       style: TextStyle(color: Colors.grey),
                     ),
                     GestureDetector(
-                      onTap: () { 
+                      onTap: () {
                         Navigator.push(
                           context,
-                          MaterialPageRoute(
-                            builder: (context) => const RegisterPage(),
+                          MaterialPageRoute<void>(
+                            builder: (_) => const RegisterPage(),
                           ),
                         );
                       },

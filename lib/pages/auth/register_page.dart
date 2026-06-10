@@ -1,6 +1,9 @@
-import 'package:aduin_jember/services/auth_service.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
 import '../../core/theme.dart';
+import '../../services/api_client.dart';
+import '../../services/auth_service.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -10,31 +13,100 @@ class RegisterPage extends StatefulWidget {
 }
 
 class _RegisterPageState extends State<RegisterPage> {
-  // Controller untuk menangkap input data (Nomor Telepon diganti NIK)
-  final TextEditingController _namaController = TextEditingController();
+  final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _nikController = TextEditingController(); // Perubahan di sini
+  final TextEditingController _nikController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _confirmPasswordController = TextEditingController();
+  final TextEditingController _confirmPasswordController =
+      TextEditingController();
 
-  // State untuk toggle mata password
   bool _isObscurePass = true;
   bool _isObscureConfirm = true;
-  
-  // State untuk animasi loading saat memanggil API
   bool _isLoading = false;
 
   @override
   void dispose() {
-    _namaController.dispose();
+    _nameController.dispose();
     _emailController.dispose();
-    _nikController.dispose(); // Perubahan di sini
+    _nikController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
   }
 
-  // Widget Helper untuk membuat desain "Card Input" yang rapi
+  Future<void> _submit() async {
+    if (_nameController.text.trim().isEmpty ||
+        _emailController.text.trim().isEmpty ||
+        _passwordController.text.isEmpty ||
+        _nikController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Nama, email, NIK, dan kata sandi wajib diisi.'),
+        ),
+      );
+      return;
+    }
+
+    if (_passwordController.text != _confirmPasswordController.text) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Kata sandi tidak cocok.')));
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      await context.read<AuthController>().signUp(
+        fullName: _nameController.text,
+        email: _emailController.text,
+        nik: _nikController.text,
+        password: _passwordController.text,
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Pendaftaran berhasil. Silakan masuk.'),
+          backgroundColor: Colors.green,
+        ),
+      );
+      Navigator.pop(context);
+    } on ApiException catch (error) {
+      if (mounted) {
+        debugPrint('Register failed (${error.statusCode}): ${error.body}');
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(_registerErrorMessage(error))));
+      }
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(error.toString())));
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  String _registerErrorMessage(ApiException error) {
+    if (error.statusCode == 409) {
+      return 'Email sudah terdaftar.';
+    }
+
+    if (error.isServerError) {
+      return 'Pendaftaran belum berhasil karena server mengembalikan error ${error.statusCode}. Cek log Railway untuk detailnya.';
+    }
+
+    return error.message;
+  }
+
   Widget _buildInputCard({
     required String label,
     required String hint,
@@ -51,7 +123,7 @@ class _RegisterPageState extends State<RegisterPage> {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04), 
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -77,12 +149,14 @@ class _RegisterPageState extends State<RegisterPage> {
               decoration: InputDecoration(
                 hintText: hint,
                 hintStyle: const TextStyle(color: Colors.grey, fontSize: 14),
-                // Menghilangkan border bawaan karena sudah dibungkus Container
                 border: InputBorder.none,
                 enabledBorder: InputBorder.none,
                 focusedBorder: InputBorder.none,
                 filled: false,
-                contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 0),
+                contentPadding: const EdgeInsets.symmetric(
+                  vertical: 8,
+                  horizontal: 0,
+                ),
                 suffixIcon: isPassword
                     ? IconButton(
                         icon: Icon(
@@ -103,7 +177,7 @@ class _RegisterPageState extends State<RegisterPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor, // Background abu-abu terang
+      backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
         backgroundColor: AppTheme.backgroundColor,
         elevation: 0,
@@ -123,11 +197,10 @@ class _RegisterPageState extends State<RegisterPage> {
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // 1. Header Texts
               const Text(
                 'Daftar Akun Baru',
                 style: TextStyle(
@@ -142,12 +215,10 @@ class _RegisterPageState extends State<RegisterPage> {
                 style: TextStyle(fontSize: 14, color: Colors.grey),
               ),
               const SizedBox(height: 32),
-
-              // 2. Input Cards
               _buildInputCard(
                 label: 'Nama Lengkap',
                 hint: 'Masukkan nama lengkap',
-                controller: _namaController,
+                controller: _nameController,
                 keyboardType: TextInputType.name,
               ),
               _buildInputCard(
@@ -156,12 +227,11 @@ class _RegisterPageState extends State<RegisterPage> {
                 controller: _emailController,
                 keyboardType: TextInputType.emailAddress,
               ),
-              // Perubahan: Form Input NIK
               _buildInputCard(
                 label: 'NIK',
                 hint: 'Masukkan 16 digit NIK',
                 controller: _nikController,
-                keyboardType: TextInputType.number, // Memunculkan keyboard angka
+                keyboardType: TextInputType.number,
               ),
               _buildInputCard(
                 label: 'Kata Sandi',
@@ -184,78 +254,23 @@ class _RegisterPageState extends State<RegisterPage> {
                 },
               ),
               const SizedBox(height: 32),
-
-              // 3. Register Button dengan state Loading & API call
               SizedBox(
-                height: 54, 
+                height: 54,
                 child: ElevatedButton(
-                  onPressed: _isLoading ? null : () async {
-                    // Validasi input kosong
-                    if (_namaController.text.isEmpty || 
-                        _emailController.text.isEmpty || 
-                        _nikController.text.isEmpty || // Tambahan validasi NIK
-                        _passwordController.text.isEmpty) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Harap isi data yang wajib (Nama, Email, NIK, Sandi)!')),
-                      );
-                      return;
-                    }
-                    
-                    // Validasi kecocokan password
-                    if (_passwordController.text != _confirmPasswordController.text) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Kata sandi tidak cocok!')),
-                      );
-                      return;
-                    }
-
-                    setState(() {
-                      _isLoading = true;
-                    });
-
-                    // Panggil API Register melalui AuthService (phone diganti nik)
-                    bool isSuccess = await AuthService.registerUser(
-                      nama: _namaController.text,
-                      email: _emailController.text,
-                      nik: _nikController.text, // Perubahan parameter di sini
-                      password: _passwordController.text,
-                    );
-
-                    setState(() {
-                      _isLoading = false;
-                    });
-
-                    if (context.mounted) {
-                      if (isSuccess) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Pendaftaran berhasil! Silakan Login.'),
-                            backgroundColor: Colors.green,
-                          ),
-                        );
-                        Navigator.pop(context); 
-                      } else {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Pendaftaran gagal. Periksa kembali data Anda atau jaringan Anda.'),
-                            backgroundColor: Colors.red,
-                          ),
-                        );
-                      }
-                    }
-                  },
-                  child: _isLoading 
+                  onPressed: _isLoading ? null : _submit,
+                  child: _isLoading
                       ? const SizedBox(
-                          width: 24, 
-                          height: 24, 
-                          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5)
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2.5,
+                          ),
                         )
                       : const Text('Daftar'),
                 ),
               ),
               const SizedBox(height: 24),
-
-              // 4. Footer Text
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -264,9 +279,7 @@ class _RegisterPageState extends State<RegisterPage> {
                     style: TextStyle(color: Colors.grey),
                   ),
                   GestureDetector(
-                    onTap: () { 
-                      Navigator.pop(context); 
-                    },
+                    onTap: () => Navigator.pop(context),
                     child: const Text(
                       'Masuk di sini',
                       style: TextStyle(
