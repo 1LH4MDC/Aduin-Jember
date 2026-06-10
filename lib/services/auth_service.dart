@@ -201,11 +201,25 @@ class AuthController extends ChangeNotifier {
     final candidates = [data['profile'], data['profil'], data['user'], data];
 
     for (final candidate in candidates) {
+      Map<String, dynamic>? profileMap;
       if (candidate is Map<String, dynamic>) {
-        return candidate;
+        profileMap = Map<String, dynamic>.from(candidate);
+      } else if (candidate is Map) {
+        profileMap = Map<String, dynamic>.from(candidate);
       }
-      if (candidate is Map) {
-        return Map<String, dynamic>.from(candidate);
+
+      if (profileMap != null) {
+        // Menyisipkan field role/admin dari data luar ke profil jika belum ada
+        if (data['role'] != null && !profileMap.containsKey('role')) {
+          profileMap['role'] = data['role'];
+        }
+        if (data['is_admin'] != null && !profileMap.containsKey('is_admin')) {
+          profileMap['is_admin'] = data['is_admin'];
+        }
+        if (data['isAdmin'] != null && !profileMap.containsKey('isAdmin')) {
+          profileMap['isAdmin'] = data['isAdmin'];
+        }
+        return profileMap;
       }
     }
 
