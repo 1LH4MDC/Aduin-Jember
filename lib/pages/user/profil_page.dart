@@ -1,15 +1,36 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../core/theme.dart';
+import '../../services/auth_service.dart';
 import '../auth/login_page.dart';
-import 'edit_profil_page.dart'; // Import halaman edit yang baru dibuat
+import 'edit_profil_page.dart';
 
-class ProfilPage extends StatelessWidget {
+class ProfilPage extends StatefulWidget {
   const ProfilPage({super.key});
 
   @override
+  State<ProfilPage> createState() => _ProfilPageState();
+}
+
+class _ProfilPageState extends State<ProfilPage> {
+  Future<void> _reloadAndNavigateToEdit(BuildContext context, AuthController auth) async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const EditProfilPage()),
+    );
+    // Jika edit berhasil (halaman edit mengembalikan true), reload profil
+    if (result == true && context.mounted) {
+      await auth.loadProfile();
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final auth = Provider.of<AuthController>(context);
+    final userProfile = auth.profile ?? {};
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA), // Latar belakang abu-abu sangat muda
+      backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
@@ -33,7 +54,7 @@ class ProfilPage extends StatelessWidget {
         child: Column(
           children: [
             // 1. Foto Profil & Judul
-            const Center(
+            Center(
               child: Column(
                 children: [
                   CircleAvatar(
@@ -41,14 +62,19 @@ class ProfilPage extends StatelessWidget {
                     backgroundColor: Colors.white,
                     child: CircleAvatar(
                       radius: 42,
-                      backgroundColor: Color(0xFFF0F0F0),
-                      child: Icon(Icons.person_outline, size: 40, color: Colors.grey),
+                      backgroundColor: const Color(0xFFF0F0F0),
+                      backgroundImage: userProfile['fotoProfil'] != null && userProfile['fotoProfil'].toString().isNotEmpty
+                          ? NetworkImage(userProfile['fotoProfil'].toString())
+                          : null,
+                      child: userProfile['fotoProfil'] == null || userProfile['fotoProfil'].toString().isEmpty
+                          ? const Icon(Icons.person_outline, size: 40, color: Colors.grey)
+                          : null,
                     ),
                   ),
-                  SizedBox(height: 16),
+                  const SizedBox(height: 16),
                   Text(
-                    'Profil Pengguna',
-                    style: TextStyle(
+                    auth.displayName,
+                    style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                       color: AppTheme.textPrimary,
@@ -60,39 +86,36 @@ class ProfilPage extends StatelessWidget {
             const SizedBox(height: 32),
 
             // 2. Data Kartu Informasi Pribadi
-            _buildInfoCard('Nama Lengkap', 'Ilham Dwi Cahya'),
-            _buildInfoCard('Email', 'ilham@mhs.unej.ac.id'),
-            _buildInfoCard('NIK', '3509123456789012'), // Disesuaikan dengan format NIK 16 digit
-            _buildInfoCard('Alamat Tinggal', 'Kec. Sumbersari, Kab. Jember'),
+            _buildInfoCard('Nama Lengkap', auth.displayName),
+            _buildInfoCard('Email', auth.email),
+            _buildInfoCard('NIK', userProfile['nik']?.toString() ?? userProfile['phone']?.toString() ?? '-'),
+            _buildInfoCard('Alamat Tinggal', userProfile['alamat']?.toString() ?? userProfile['alamatLengkap']?.toString() ?? userProfile['address']?.toString() ?? '-'),
             
             const SizedBox(height: 8),
 
             // 3. Tombol Edit Akun
             _buildActionCard(
               title: 'Edit Akun',
-              subtitle: '(Ubah Username & Password)',
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const EditProfilPage()),
-                );
-              },
+              subtitle: 'Ubah Nama, NIK & Password',
+              onTap: () => _reloadAndNavigateToEdit(context, auth),
             ),
 
             const SizedBox(height: 32),
 
             // 4. Tombol Keluar (Logout)
             TextButton.icon(
-              onPressed: () {
-                // TODO: Bersihkan sesi token / cache API
-                
-                // Navigasi hapus riwayat dan kembali ke Login
-                Navigator.pushAndRemoveUntil(
-                  context,
-                  MaterialPageRoute(builder: (context) => const LoginPage()),
-                  (route) => false,
-                );
-              },
+              onPressed: auth.isBusy
+                  ? null
+                  : () async {
+                      await auth.signOut();
+                      if (context.mounted) {
+                        Navigator.pushAndRemoveUntil(
+                          context,
+                          MaterialPageRoute(builder: (context) => const LoginPage()),
+                          (route) => false,
+                        );
+                      }
+                    },
               icon: const Icon(Icons.logout, color: Color(0xFFC62828)),
               label: const Text(
                 'Keluar',

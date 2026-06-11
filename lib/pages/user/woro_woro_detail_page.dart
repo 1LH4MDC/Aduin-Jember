@@ -4,11 +4,15 @@ import '../../core/theme.dart';
 class WoroWoroDetailPage extends StatelessWidget {
   final String title;
   final String date;
+  final String konten;
+  final String kategori;
 
   const WoroWoroDetailPage({
     super.key,
     required this.title,
     required this.date,
+    required this.konten,
+    required this.kategori,
   });
 
   @override
@@ -19,12 +23,11 @@ class WoroWoroDetailPage extends StatelessWidget {
         backgroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
-        // Custom tombol kembali melingkar sesuai mockup figma
         leading: Padding(
           padding: const EdgeInsets.all(8.0),
           child: Container(
             decoration: const BoxDecoration(
-              color: AppTheme.primaryColor, // Warna Navy
+              color: AppTheme.primaryColor,
               shape: BoxShape.circle,
             ),
             child: IconButton(
@@ -49,21 +52,18 @@ class WoroWoroDetailPage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 1. Banner Image (Menggunakan ClipRRect agar melengkung presisi)
             ClipRRect(
               borderRadius: BorderRadius.circular(16),
               child: Container(
                 width: double.infinity,
                 height: 200,
-                color: const Color(0xFFE0E0E0), // Placeholder abu-abu sebelum API gambar aktif
+                color: const Color(0xFFE0E0E0),
                 child: const Center(
                   child: Icon(Icons.image_outlined, color: Colors.grey, size: 50),
                 ),
               ),
             ),
             const SizedBox(height: 20),
-
-            // 2. Judul Pengumuman
             Text(
               title,
               style: const TextStyle(
@@ -74,20 +74,17 @@ class WoroWoroDetailPage extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 14),
-
-            // 3. Row Kategori & Tanggal
             Row(
               children: [
-                // Kapsul Kategori
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                   decoration: BoxDecoration(
                     color: AppTheme.primaryColor,
                     borderRadius: BorderRadius.circular(20),
                   ),
-                  child: const Text(
-                    'Infrastruktur',
-                    style: TextStyle(
+                  child: Text(
+                    kategori,
+                    style: const TextStyle(
                       color: Colors.white,
                       fontSize: 11,
                       fontWeight: FontWeight.bold,
@@ -95,7 +92,6 @@ class WoroWoroDetailPage extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 14),
-                // Info Tanggal
                 Row(
                   children: [
                     const Icon(Icons.calendar_today_outlined, size: 14, color: Colors.grey),
@@ -109,8 +105,6 @@ class WoroWoroDetailPage extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 20),
-
-            // 4. Card Isi Pengumuman (Bungkus Teks dengan Border Halus)
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(16),
@@ -119,27 +113,13 @@ class WoroWoroDetailPage extends StatelessWidget {
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: Colors.grey.withValues(alpha: 0.25)),
               ),
-              child: const Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Pemerintah Kabupaten Jember melalui Dinas Pekerjaan Umum dan Penataan Ruang (PUPR) dengan bangga mengumumkan bahwa proyek perbaikan infrastruktur jalan di kawasan strategis Sumbersari telah resmi selesai.',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: AppTheme.textPrimary,
-                      height: 1.5,
-                    ),
-                  ),
-                  SizedBox(height: 16),
-                  Text(
-                    'Proyek yang dimulai sejak tiga bulan lalu ini mencakup pengaspalan ulang (overlay) sepanjang 2,5 kilometer guna meningkatkan kenyamanan dan keamanan berkendara bagi masyarakat. Pengerjaan ini merupakan bagian dari komitmen "Jember Melesat" untuk memastikan konektivitas antar-kecamatan tetap prima.',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: AppTheme.textPrimary,
-                      height: 1.5,
-                    ),
-                  ),
-                ],
+              child: Text(
+                konten,
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: AppTheme.textPrimary,
+                  height: 1.5,
+                ),
               ),
             ),
           ],

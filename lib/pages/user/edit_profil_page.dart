@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../core/theme.dart';
+import '../../services/auth_service.dart';
 
 class EditProfilPage extends StatefulWidget {
   const EditProfilPage({super.key});
@@ -9,45 +11,84 @@ class EditProfilPage extends StatefulWidget {
 }
 
 class _EditProfilPageState extends State<EditProfilPage> {
-  // Controller untuk form input
-  late TextEditingController _namaController;
-  late TextEditingController _emailController;
-  late TextEditingController _nikController;
-  late TextEditingController _alamatController;
-  late TextEditingController _oldPasswordController;
-  late TextEditingController _newPasswordController;
+  final _namaController = TextEditingController();
+  final _nikController = TextEditingController();
+  final _oldPasswordController = TextEditingController();
+  final _newPasswordController = TextEditingController();
 
-  // State untuk toggle mata password
   bool _isObscureOld = true;
   bool _isObscureNew = true;
-  
-  // State animasi loading
   bool _isLoading = false;
+  bool _initialized = false;
 
   @override
-  void initState() {
-    super.initState();
-    // Menginisialisasi controller dengan data dummy agar form tidak kosong saat dibuka
-    _namaController = TextEditingController(text: 'ham dc');
-    _emailController = TextEditingController(text: 'gg@gmail.com');
-    _nikController = TextEditingController(text: '+62 812-XXXX-XXXX');
-    _alamatController = TextEditingController(text: 'Kec. Sumbersari, Kab. Jember');
-    _oldPasswordController = TextEditingController();
-    _newPasswordController = TextEditingController();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Isi controller hanya satu kali saat widget pertama kali dimount
+    // didChangeDependencies aman untuk mengakses InheritedWidget (Provider)
+    if (!_initialized) {
+      final auth = Provider.of<AuthController>(context, listen: false);
+      final userProfile = auth.profile ?? {};
+
+      _namaController.text = auth.displayName;
+      _nikController.text = userProfile['nik']?.toString() ?? '';
+
+      _initialized = true;
+    }
   }
 
   @override
   void dispose() {
     _namaController.dispose();
-    _emailController.dispose();
     _nikController.dispose();
-    _alamatController.dispose();
     _oldPasswordController.dispose();
     _newPasswordController.dispose();
     super.dispose();
   }
 
-  // Widget Helper untuk membuat Card Input yang rapi
+  Future<void> _submit() async {
+    final nama = _namaController.text.trim();
+    final nik = _nikController.text.trim();
+
+    if (nama.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Nama tidak boleh kosong!')),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      final auth = context.read<AuthController>();
+      await auth.updateProfile(
+        nama: nama,
+        nik: nik,
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Profil berhasil diperbarui!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        Navigator.pop(context, true); // Kembalikan true agar halaman profil tahu ada perubahan
+      }
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal memperbarui profil: $error'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
   Widget _buildInputCard({
     required String label,
     required String hint,
@@ -56,11 +97,12 @@ class _EditProfilPageState extends State<EditProfilPage> {
     bool isPassword = false,
     bool? isObscure,
     VoidCallback? onToggleObscure,
+    bool readOnly = false,
   }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: readOnly ? const Color(0xFFF5F5F5) : Colors.white,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
@@ -85,9 +127,13 @@ class _EditProfilPageState extends State<EditProfilPage> {
             ),
             TextFormField(
               controller: controller,
+              readOnly: readOnly,
               obscureText: isPassword ? (isObscure ?? true) : false,
               keyboardType: keyboardType,
-              style: const TextStyle(fontSize: 15, color: AppTheme.textPrimary),
+              style: TextStyle(
+                fontSize: 15,
+                color: readOnly ? Colors.grey : AppTheme.textPrimary,
+              ),
               decoration: InputDecoration(
                 hintText: hint,
                 hintStyle: const TextStyle(color: Colors.grey, fontSize: 14),
@@ -95,7 +141,8 @@ class _EditProfilPageState extends State<EditProfilPage> {
                 enabledBorder: InputBorder.none,
                 focusedBorder: InputBorder.none,
                 filled: false,
-                contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 0),
+                contentPadding:
+                    const EdgeInsets.symmetric(vertical: 8, horizontal: 0),
                 suffixIcon: isPassword
                     ? IconButton(
                         icon: Icon(
@@ -116,6 +163,9 @@ class _EditProfilPageState extends State<EditProfilPage> {
 
   @override
   Widget build(BuildContext context) {
+    // Baca email dari Provider untuk tampilan (read-only)
+    final email = context.select<AuthController, String>((a) => a.email);
+
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
@@ -138,7 +188,6 @@ class _EditProfilPageState extends State<EditProfilPage> {
       body: SafeArea(
         child: Column(
           children: [
-            // Konten Form yang bisa di-scroll
             Expanded(
               child: SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),
@@ -155,33 +204,69 @@ class _EditProfilPageState extends State<EditProfilPage> {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    
+
                     _buildInputCard(
                       label: 'Nama Lengkap',
                       hint: 'Masukkan nama Anda',
                       controller: _namaController,
                     ),
-                    _buildInputCard(
-                      label: 'Email',
-                      hint: 'contoh@email.com',
-                      controller: _emailController,
-                      keyboardType: TextInputType.emailAddress,
-                    ),
-                    _buildInputCard(
-                      label: 'NIK / No. Telepon',
-                      hint: 'Masukkan NIK atau No. Telepon',
-                      controller: _nikController,
-                      keyboardType: TextInputType.phone,
-                    ),
-                    _buildInputCard(
-                      label: 'Alamat Tinggal',
-                      hint: 'Masukkan alamat domisili',
-                      controller: _alamatController,
+
+                    // Email ditampilkan sebagai read-only (tidak bisa diubah via endpoint ini)
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 16),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF5F5F5),
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.04),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.only(
+                            left: 16, right: 8, top: 12, bottom: 12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Email',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: AppTheme.primaryColor,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              email.isNotEmpty ? email : '-',
+                              style: const TextStyle(
+                                fontSize: 15,
+                                color: Colors.grey,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            const Text(
+                              'Email tidak dapat diubah',
+                              style: TextStyle(fontSize: 11, color: Colors.grey),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
 
-                    const SizedBox(height: 16),
+                    _buildInputCard(
+                      label: 'NIK',
+                      hint: 'Masukkan NIK (16 digit)',
+                      controller: _nikController,
+                      keyboardType: TextInputType.number,
+                    ),
+
+                    const SizedBox(height: 8),
                     const Divider(color: Color(0xFFE0E0E0), thickness: 1),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 16),
 
                     const Text(
                       'Keamanan Akun',
@@ -191,11 +276,16 @@ class _EditProfilPageState extends State<EditProfilPage> {
                         color: AppTheme.textPrimary,
                       ),
                     ),
+                    const SizedBox(height: 4),
+                    const Text(
+                      'Kosongkan jika tidak ingin mengubah kata sandi',
+                      style: TextStyle(fontSize: 12, color: Colors.grey),
+                    ),
                     const SizedBox(height: 16),
 
                     _buildInputCard(
                       label: 'Kata Sandi Saat Ini',
-                      hint: 'Masukkan untuk verifikasi (Opsional)',
+                      hint: 'Masukkan kata sandi lama',
                       controller: _oldPasswordController,
                       isPassword: true,
                       isObscure: _isObscureOld,
@@ -205,7 +295,7 @@ class _EditProfilPageState extends State<EditProfilPage> {
                     ),
                     _buildInputCard(
                       label: 'Kata Sandi Baru',
-                      hint: 'Kosongkan jika tidak ingin diubah',
+                      hint: 'Masukkan kata sandi baru',
                       controller: _newPasswordController,
                       isPassword: true,
                       isObscure: _isObscureNew,
@@ -218,55 +308,29 @@ class _EditProfilPageState extends State<EditProfilPage> {
               ),
             ),
 
-            // Tombol Simpan Fixed di Bawah Layar
+            // Tombol Simpan Fixed di Bawah
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
                 color: Colors.white,
-                border: Border(top: BorderSide(color: Colors.grey.withValues(alpha: 0.2))),
+                border: Border(
+                    top: BorderSide(color: Colors.grey.withValues(alpha: 0.2))),
               ),
               child: SizedBox(
                 height: 54,
                 child: ElevatedButton(
-                  onPressed: _isLoading ? null : () async {
-                    // Validasi Dasar
-                    if (_namaController.text.isEmpty || _emailController.text.isEmpty) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Nama dan Email tidak boleh kosong!')),
-                      );
-                      return;
-                    }
-
-                    setState(() {
-                      _isLoading = true;
-                    });
-
-                    // TODO: Panggil API PUT /api/profil di sini
-                    await Future.delayed(const Duration(seconds: 2)); // Simulasi delay jaringan
-
-                    setState(() {
-                      _isLoading = false;
-                    });
-
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Profil berhasil diperbarui!'),
-                          backgroundColor: Colors.green,
-                        ),
-                      );
-                      Navigator.pop(context); // Kembali ke halaman profil
-                    }
-                  },
+                  onPressed: _isLoading ? null : _submit,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppTheme.primaryColor,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
                   ),
                   child: _isLoading
                       ? const SizedBox(
                           width: 24,
                           height: 24,
-                          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
+                          child: CircularProgressIndicator(
+                              color: Colors.white, strokeWidth: 2.5),
                         )
                       : const Text(
                           'Simpan Perubahan',

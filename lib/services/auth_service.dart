@@ -81,6 +81,35 @@ class AuthController extends ChangeNotifier {
     profile = _extractDataMap(response);
   }
 
+  Future<void> updateProfile({
+    required String nama,
+    required String nik,
+    String? fotoProfil,
+  }) async {
+    isBusy = true;
+    errorMessage = null;
+    notifyListeners();
+
+    try {
+      await apiClient.patchJson(
+        '/api/profil',
+        authenticated: true,
+        body: {
+          'nama': nama.trim(),
+          'nik': nik.trim(),
+          if (fotoProfil != null) 'fotoProfil': fotoProfil,
+        },
+      );
+      await loadProfile();
+    } catch (error) {
+      errorMessage = error.toString();
+      rethrow;
+    } finally {
+      isBusy = false;
+      notifyListeners();
+    }
+  }
+
   Future<void> signIn({required String email, required String password}) async {
     isBusy = true;
     errorMessage = null;

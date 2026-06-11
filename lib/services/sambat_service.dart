@@ -1,7 +1,6 @@
-import 'dart:convert';
-import 'dart:io';
+import 'dart:typed_data';
 
-import 'package:http/http.dart' as http;
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../core/app_config.dart';
 import 'api_client.dart';
@@ -19,6 +18,7 @@ class SambatService {
   Future<List<Map<String, dynamic>>> fetchAllSambat({
     String? status,
     String? category,
+    String? search,
   }) async {
     final queryParameters = <String, dynamic>{};
     if (status != null && status.isNotEmpty) {
@@ -26,6 +26,9 @@ class SambatService {
     }
     if (category != null && category.isNotEmpty) {
       queryParameters['kategori'] = category;
+    }
+    if (search != null && search.isNotEmpty) {
+      queryParameters['search'] = search;
     }
 
     return fetchSambat(
@@ -47,12 +50,16 @@ class SambatService {
     required String title,
     required String category,
     required String description,
-    required File imageFile,
+    required Uint8List imageBytes,
+    required String imageName,
     required double latitude,
     required double longitude,
     required String address,
   }) async {
-    final publicUrl = await _createWatermarkedUrl(imageFile);
+    final publicUrl = await _uploadImageToSupabase(
+      imageBytes: imageBytes,
+      imageName: imageName,
+    );
     final response = await _apiClient.postJson(
       '/api/sambat',
       authenticated: true,
@@ -83,55 +90,26 @@ class SambatService {
     );
   }
 
-  Future<String> _createWatermarkedUrl(File sourceFile) async {
-    final request = http.MultipartRequest('POST', AppConfig.watermarkUri)
-      ..files.add(await http.MultipartFile.fromPath('image', sourceFile.path))
-      ..fields['watermark_text'] = AppConfig.defaultWatermarkText
-      ..fields['text'] = AppConfig.defaultWatermarkText;
-
-    final token = _apiClient.token;
-    if (token != null && token.isNotEmpty) {
-      request.headers['Authorization'] = 'Bearer $token';
+  Future<String> _uploadImageToSupabase({
+    required Uint8List imageBytes,
+    required String imageName,
+  }) async {
+    if (!AppConfig.hasSupabaseConfig) {
+      throw Exception(
+        'Konfigurasi Supabase belum diset. Isi SUPABASE_URL dan SUPABASE_ANON_KEY.',
+      );
     }
 
-    final response = await request.send();
-    final bytes = await response.stream.toBytes();
+    final safeName = imageName.trim().isEmpty
+        ? 'sambat.jpg'
+        : imageName.trim().replaceAll(RegExp(r'[^A-Za-z0-9._-]'), '_');
+    final objectPath = 'sambat/${DateTime.now().millisecondsSinceEpoch}_$safeName';
+    final storage = Supabase.instance.client.storage.from(
+      AppConfig.sambatBucketName,
+    );
 
-    if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw Exception('Watermark gagal: ${utf8.decode(bytes)}');
-    }
-
-    final body = utf8.decode(bytes).trim();
-    if (body.startsWith('http')) {
-      return body;
-    }
-
-    final decoded = jsonDecode(body);
-    if (decoded is Map<String, dynamic>) {
-      final data = decoded['data'];
-      final nestedMap = data is Map<String, dynamic>
-          ? data
-          : data is Map
-          ? Map<String, dynamic>.from(data)
-          : <String, dynamic>{};
-
-      final urlValue =
-          decoded['fotoUrl'] ??
-          decoded['watermarked_url'] ??
-          decoded['image_url'] ??
-          decoded['url'] ??
-          decoded['resultUrl'] ??
-          nestedMap['fotoUrl'] ??
-          nestedMap['watermarked_url'] ??
-          nestedMap['image_url'] ??
-          nestedMap['url'] ??
-          nestedMap['resultUrl'];
-      if (urlValue is String && urlValue.isNotEmpty) {
-        return urlValue;
-      }
-    }
-
-    throw Exception('Respons watermark tidak dikenali.');
+    await storage.uploadBinary(objectPath, imageBytes);
+    return storage.getPublicUrl(objectPath);
   }
 
   List<Map<String, dynamic>> _toMapList(dynamic data) {

@@ -4,17 +4,20 @@ class AppConfig {
     defaultValue: 'https://aduinjember-production.up.railway.app',
   );
 
-  static const String googleMapsApiKey = String.fromEnvironment(
-    'GOOGLE_MAPS_API_KEY',
-    defaultValue: '',
+  static const String supabaseUrl = String.fromEnvironment(
+    'SUPABASE_URL',
+    defaultValue: 'https://ulztiyvuezhupmkcbczx.supabase.co',
   );
 
-  static const String sambatBucketName = 'report-images';
-  static const String defaultWatermarkText = 'Aduin Jember';
+  static const String supabaseAnonKey = String.fromEnvironment(
+    'SUPABASE_ANON_KEY',
+    defaultValue: 'sb_publishable_mUr1kT1jZJ0uaKU2FfHTOg_xhSCFzzN',
+  );
 
-  static bool get hasGoogleMapsConfig => googleMapsApiKey.isNotEmpty;
+  static const String sambatBucketName = 'foto-laporan';
 
-  static Uri get watermarkUri => Uri.parse('$railwayBaseUrl/watermark');
+  static bool get hasSupabaseConfig =>
+      supabaseUrl.isNotEmpty && supabaseAnonKey.isNotEmpty;
 
   static Uri apiUri(String path, [Map<String, dynamic>? queryParameters]) {
     final normalizedBase = railwayBaseUrl.endsWith('/')

@@ -1,13 +1,12 @@
-import 'dart:io';
-
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:latlong2/latlong.dart' as latlong;
 import 'package:provider/provider.dart';
 
-import '../../core/app_config.dart';
 import '../../core/theme.dart';
 import '../../services/auth_service.dart';
 import '../../services/sambat_service.dart';
@@ -24,25 +23,27 @@ class _CreateSambatPageState extends State<CreateSambatPage> {
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _picker = ImagePicker();
+  final _mapController = MapController();
 
   final List<String> _categories = const [
-    'Jalan Rusak',
-    'Lampu Penerangan',
-    'Sampah',
-    'Drainase',
-    'Keamanan',
-    'Lainnya',
+    'Sosial',
+    'Infrastruktur',
+    'Layanan Umum',
   ];
 
   String? _selectedCategory;
-  File? _imageFile;
-  LatLng? _selectedPosition;
+  Uint8List? _imageBytes;
+  String? _imageName;
+  latlong.LatLng? _selectedPosition;
   String? _selectedAddress;
   bool _isPickingImage = false;
   bool _isResolvingLocation = false;
   bool _isSubmitting = false;
 
-  static const LatLng _defaultPosition = LatLng(-8.1715, 113.7020);
+  static const latlong.LatLng _defaultPosition = latlong.LatLng(
+    -8.1715,
+    113.7020,
+  );
 
   @override
   void initState() {
@@ -64,13 +65,15 @@ class _CreateSambatPageState extends State<CreateSambatPage> {
 
     try {
       final picked = await _picker.pickImage(
-        source: ImageSource.camera,
+        source: kIsWeb ? ImageSource.gallery : ImageSource.camera,
         imageQuality: 80,
       );
 
       if (picked != null) {
+        final bytes = await picked.readAsBytes();
         setState(() {
-          _imageFile = File(picked.path);
+          _imageBytes = bytes;
+          _imageName = picked.name.isNotEmpty ? picked.name : 'sambat.jpg';
         });
       }
     } finally {
@@ -99,7 +102,9 @@ class _CreateSambatPageState extends State<CreateSambatPage> {
           accuracy: LocationAccuracy.high,
         ),
       );
-      await _updateLocation(LatLng(position.latitude, position.longitude));
+      await _updateLocation(
+        latlong.LatLng(position.latitude, position.longitude),
+      );
     } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(
@@ -113,15 +118,16 @@ class _CreateSambatPageState extends State<CreateSambatPage> {
     }
   }
 
-  Future<void> _updateLocation(LatLng position) async {
+  Future<void> _updateLocation(latlong.LatLng position) async {
     setState(() {
       _selectedPosition = position;
     });
 
+    _mapController.move(position, 15);
     await _resolveAddress(position);
   }
 
-  Future<void> _resolveAddress(LatLng position) async {
+  Future<void> _resolveAddress(latlong.LatLng position) async {
     try {
       final placemarks = await placemarkFromCoordinates(
         position.latitude,
@@ -153,7 +159,7 @@ class _CreateSambatPageState extends State<CreateSambatPage> {
       return;
     }
 
-    if (_imageFile == null) {
+    if (_imageBytes == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Foto sambat wajib diambil.')),
       );
@@ -183,7 +189,8 @@ class _CreateSambatPageState extends State<CreateSambatPage> {
         title: _titleController.text.trim(),
         category: _selectedCategory ?? _categories.first,
         description: _descriptionController.text.trim(),
-        imageFile: _imageFile!,
+        imageBytes: _imageBytes!,
+        imageName: _imageName ?? 'sambat.jpg',
         latitude: _selectedPosition!.latitude,
         longitude: _selectedPosition!.longitude,
         address: _selectedAddress!,
@@ -285,11 +292,11 @@ class _CreateSambatPageState extends State<CreateSambatPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    if (_imageFile != null)
+                    if (_imageBytes != null)
                       ClipRRect(
                         borderRadius: BorderRadius.circular(16),
-                        child: Image.file(
-                          _imageFile!,
+                        child: Image.memory(
+                          _imageBytes!,
                           height: 220,
                           fit: BoxFit.cover,
                         ),
@@ -317,8 +324,8 @@ class _CreateSambatPageState extends State<CreateSambatPage> {
                                 color: Colors.white,
                               ),
                             )
-                          : const Icon(Icons.camera_alt_outlined),
-                      label: const Text('Ambil Foto Kamera'),
+                          : const Icon(Icons.photo_library_outlined),
+                      label: Text(kIsWeb ? 'Pilih Gambar' : 'Ambil Foto Kamera'),
                     ),
                   ],
                 ),
@@ -329,43 +336,76 @@ class _CreateSambatPageState extends State<CreateSambatPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    if (AppConfig.hasGoogleMapsConfig)
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(16),
-                        child: SizedBox(
-                          height: 260,
-                          child: GoogleMap(
-                            initialCameraPosition: CameraPosition(
-                              target: _selectedPosition ?? _defaultPosition,
-                              zoom: 15,
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(16),
+                      child: SizedBox(
+                        height: 260,
+                        child: Stack(
+                          children: [
+                            FlutterMap(
+                              mapController: _mapController,
+                              options: MapOptions(
+                                initialCenter:
+                                    _selectedPosition ?? _defaultPosition,
+                                initialZoom: 15,
+                                onTap: (tapPosition, point) =>
+                                    _updateLocation(
+                                  latlong.LatLng(
+                                    point.latitude,
+                                    point.longitude,
+                                  ),
+                                ),
+                              ),
+                              children: [
+                                TileLayer(
+                                  urlTemplate:
+                                      'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                                  userAgentPackageName: 'aduin_jember',
+                                ),
+                                if (_selectedPosition != null)
+                                  MarkerLayer(
+                                    markers: [
+                                      Marker(
+                                        point: _selectedPosition!,
+                                        width: 48,
+                                        height: 48,
+                                        child: const Icon(
+                                          Icons.location_pin,
+                                          size: 48,
+                                          color: AppTheme.primaryColor,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                              ],
                             ),
-                            markers: _selectedPosition == null
-                                ? <Marker>{}
-                                : {
-                                    Marker(
-                                      markerId: const MarkerId('sambat'),
-                                      position: _selectedPosition!,
+                            Positioned(
+                              right: 8,
+                              bottom: 8,
+                              child: DecoratedBox(
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.9),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: const Padding(
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 4,
+                                  ),
+                                  child: Text(
+                                    'OpenStreetMap',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
                                     ),
-                                  },
-                            myLocationButtonEnabled: false,
-                            myLocationEnabled: true,
-                            zoomControlsEnabled: false,
-                            onTap: _updateLocation,
-                          ),
-                        ),
-                      )
-                    else
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.orange.shade50,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: Colors.orange.shade200),
-                        ),
-                        child: const Text(
-                          'Google Maps belum dikonfigurasi. Tambahkan GOOGLE_MAPS_API_KEY agar peta aktif.',
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
+                    ),
                     const SizedBox(height: 12),
                     ElevatedButton.icon(
                       onPressed: _isResolvingLocation

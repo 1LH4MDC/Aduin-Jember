@@ -1,66 +1,98 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../core/theme.dart';
+import '../../services/auth_service.dart';
+import '../../services/woro_service.dart';
 import '../sambat/create_sambat_page.dart';
 import '../sambat/my_sambat_page.dart';
-import 'woro_woro_detail_page.dart'; // Import halaman detail yang baru dibuat
+import 'woro_woro_detail_page.dart';
 
-class DashboardUser extends StatelessWidget {
+class DashboardUser extends StatefulWidget {
   const DashboardUser({super.key});
+
+  @override
+  State<DashboardUser> createState() => _DashboardUserState();
+}
+
+class _DashboardUserState extends State<DashboardUser> {
+  late Future<List<Map<String, dynamic>>> _woroFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadWoro();
+  }
+
+  void _loadWoro() {
+    _woroFuture = WoroService().fetchWoro();
+  }
+
+  Future<void> _refresh() async {
+    setState(() {
+      _loadWoro();
+    });
+    await _woroFuture;
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white, // Background putih bersih sesuai desain
-      appBar: _buildAppBar(),
-      body: SingleChildScrollView(
-        physics: const BouncingScrollPhysics(),
-        padding: const EdgeInsets.symmetric(horizontal: 20.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 10),
+      backgroundColor: Colors.white,
+      appBar: _buildAppBar(context),
+      body: RefreshIndicator(
+        onRefresh: _refresh,
+        color: AppTheme.primaryColor,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+          padding: const EdgeInsets.symmetric(horizontal: 20.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 10),
 
-            // 1. Search Bar
-            _buildSearchBar(),
-            const SizedBox(height: 24),
+              // 1. Search Bar
+              _buildSearchBar(),
+              const SizedBox(height: 24),
 
-            // 2. Woro-Woro Jember (Horizontal List)
-            const Text(
-              'Woro-Woro Jember',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: AppTheme.textPrimary,
+              // 2. Woro-Woro Jember (Horizontal List)
+              const Text(
+                'Woro-Woro Jember',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.textPrimary,
+                ),
               ),
-            ),
-            const SizedBox(height: 12),
-            _buildWoroWoroList(context), // Diperbarui: Kirim context ke fungsi list
-            const SizedBox(height: 24),
+              const SizedBox(height: 12),
+              _buildWoroWoroList(context),
+              const SizedBox(height: 24),
 
-            // 3. Fitur Utama
-            const Text(
-              'Fitur Utama',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: AppTheme.textPrimary,
+              // 3. Fitur Utama
+              const Text(
+                'Fitur Utama',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.textPrimary,
+                ),
               ),
-            ),
-            const SizedBox(height: 12),
-            _buildFiturUtama(context),
-            const SizedBox(height: 24),
+              const SizedBox(height: 12),
+              _buildFiturUtama(context),
+              const SizedBox(height: 24),
 
-            // 4. Gawat (SOS)
-            _buildGawatButton(),
-            const SizedBox(height: 30), // Spasi bawah
-          ],
+              // 4. Gawat (SOS)
+              _buildGawatButton(),
+              const SizedBox(height: 30),
+            ],
+          ),
         ),
       ),
     );
   }
 
   // --- KOMPONEN HEADER ---
-  PreferredSizeWidget _buildAppBar() {
+  PreferredSizeWidget _buildAppBar(BuildContext context) {
+    final auth = Provider.of<AuthController>(context, listen: false);
     return AppBar(
       backgroundColor: Colors.white,
       elevation: 0,
@@ -73,9 +105,9 @@ class DashboardUser extends StatelessWidget {
         ),
         onPressed: () {},
       ),
-      title: const Column(
+      title: Column(
         children: [
-          Text(
+          const Text(
             'Aduin Jember',
             style: TextStyle(
               color: AppTheme.primaryColor,
@@ -84,8 +116,8 @@ class DashboardUser extends StatelessWidget {
             ),
           ),
           Text(
-            'Halo, Warga Jember!',
-            style: TextStyle(
+            'Halo, ${auth.displayName}!',
+            style: const TextStyle(
               color: Colors.grey,
               fontSize: 12,
               fontWeight: FontWeight.normal,
@@ -117,97 +149,133 @@ class DashboardUser extends StatelessWidget {
   }
 
   // --- KOMPONEN WORO-WORO (HORIZONTAL SCROLL) ---
-  Widget _buildWoroWoroList(BuildContext context) { // Diperbarui: Menerima BuildContext
-    final List<Map<String, String>> dummyWoro = [
-      {'date': '15 Okt 2023', 'title': 'Perbaikan Jalan Selesai di Area Sumbersari'},
-      {'date': '12 Okt 2023', 'title': 'Festival Jember Nusantara'},
-    ];
+  Widget _buildWoroWoroList(BuildContext context) {
+    return FutureBuilder<List<Map<String, dynamic>>>(
+      future: _woroFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const SizedBox(
+            height: 180,
+            child: Center(
+              child: CircularProgressIndicator(color: AppTheme.primaryColor),
+            ),
+          );
+        }
+        if (snapshot.hasError) {
+          return SizedBox(
+            height: 180,
+            child: Center(
+              child: Text(
+                'Gagal memuat pengumuman',
+                style: TextStyle(color: Colors.red.shade700, fontSize: 13),
+              ),
+            ),
+          );
+        }
+        final woroList = snapshot.data ?? [];
+        if (woroList.isEmpty) {
+          return const SizedBox(
+            height: 180,
+            child: Center(
+              child: Text(
+                'Tidak ada pengumuman saat ini.',
+                style: TextStyle(color: Colors.grey, fontSize: 13),
+              ),
+            ),
+          );
+        }
 
-    return SizedBox(
-      height: 180, // Tinggi card
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        physics: const BouncingScrollPhysics(),
-        itemCount: dummyWoro.length,
-        itemBuilder: (context, index) {
-          final item = dummyWoro[index];
-          return InkWell(
-            onTap: () {
-              // Navigasi ke Halaman Detail Woro-Woro saat kartu diklik
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => WoroWoroDetailPage(
-                    title: item['title']!,
-                    date: item['date']!,
+        return SizedBox(
+          height: 180,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(),
+            itemCount: woroList.length,
+            itemBuilder: (context, index) {
+              final item = woroList[index];
+              final createdAtStr = item['createdAt']?.toString() ?? '';
+              final dateStr = createdAtStr.isNotEmpty
+                  ? createdAtStr.substring(0, 10)
+                  : '-';
+
+              return InkWell(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => WoroWoroDetailPage(
+                        title: item['judul']?.toString() ?? '',
+                        date: dateStr,
+                        konten: item['konten']?.toString() ?? '',
+                        kategori: item['kategori']?.toString() ?? 'Lainnya',
+                      ),
+                    ),
+                  );
+                },
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  width: 240,
+                  margin: const EdgeInsets.only(right: 16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.grey.withValues(alpha: 0.2)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        height: 100,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFE0E0E0),
+                          borderRadius: BorderRadius.only(
+                            topLeft: Radius.circular(12),
+                            topRight: Radius.circular(12),
+                          ),
+                        ),
+                        child: const Center(
+                          child: Icon(
+                            Icons.image_outlined,
+                            color: Colors.grey,
+                            size: 40,
+                          ),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.all(12.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              dateStr,
+                              style: const TextStyle(
+                                color: AppTheme.primaryColor,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              item['judul']?.toString() ?? '',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                                color: AppTheme.textPrimary,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               );
             },
-            borderRadius: BorderRadius.circular(12),
-            child: Container(
-              width: 240, // Lebar card
-              margin: const EdgeInsets.only(right: 16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey.withValues(alpha: 0.2)),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Bagian Gambar Placeholder (Abu-abu seperti referensi)
-                  Container(
-                    height: 100,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFFE0E0E0), // Warna placeholder gambar
-                      borderRadius: BorderRadius.only(
-                        topLeft: Radius.circular(12),
-                        topRight: Radius.circular(12),
-                      ),
-                    ),
-                    child: const Center(
-                      child: Icon(
-                        Icons.image_outlined,
-                        color: Colors.grey,
-                        size: 40,
-                      ),
-                    ),
-                  ),
-                  // Bagian Teks
-                  Padding(
-                    padding: const EdgeInsets.all(12.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          item['date']!,
-                          style: const TextStyle(
-                            color: AppTheme.primaryColor,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          item['title']!,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
-                            color: AppTheme.textPrimary,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
-      ),
+          ),
+        );
+      },
     );
   }
 

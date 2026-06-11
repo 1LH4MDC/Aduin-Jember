@@ -105,24 +105,24 @@ with check (exists (
 ));
 
 insert into storage.buckets (id, name, public)
-values ('report-images', 'report-images', true)
+values ('foto-laporan', 'foto-laporan', true)
 on conflict (id) do nothing;
 
-create policy "Authenticated users can upload report images"
+create policy "Clients can upload report images"
 on storage.objects
 for insert
 with check (
-  bucket_id = 'report-images'
-  and auth.role() = 'authenticated'
+  bucket_id = 'foto-laporan'
+  and auth.role() in ('anon', 'authenticated')
 );
 
 create policy "Everyone can read report images"
 on storage.objects
 for select
-using (bucket_id = 'report-images');
+using (bucket_id = 'foto-laporan');
 
 create policy "Users can update own report images"
 on storage.objects
 for update
-using (bucket_id = 'report-images' and auth.role() = 'authenticated')
-with check (bucket_id = 'report-images' and auth.role() = 'authenticated');
+using (bucket_id = 'foto-laporan' and auth.role() = 'authenticated')
+with check (bucket_id = 'foto-laporan' and auth.role() = 'authenticated');
