@@ -3,32 +3,46 @@ import '../../core/theme.dart';
 
 // Import ketiga halaman konten
 import 'dashboard_user.dart';
+import 'laporanku_page.dart';
 import 'profil_page.dart';
-import 'sambatku_page.dart';
 
 class BottomNav extends StatefulWidget {
   const BottomNav({super.key});
 
   @override
-  State<BottomNav> createState() => _BottomNavState();
+  State<BottomNav> createState() => _BottomNavState(); // Bisa kembali menggunakan underscore
 }
 
 class _BottomNavState extends State<BottomNav> {
   // Variabel untuk melacak index menu yang sedang aktif
   int _selectedIndex = 0;
 
-  // Daftar halaman yang akan ditampilkan sesuai urutan index
-  final List<Widget> _pages = [
-    const DashboardUser(), // Index 0
-    const SambatkuPage(), // Index 1
-    const ProfilPage(), // Index 2
-  ];
+  // Fungsi untuk memindahkan tab
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+  }
+
+  // Membuat getter untuk daftar halaman agar bisa menyuntikkan _onItemTapped
+  List<Widget> get _pages => [
+        // Mengirimkan fungsi pemindah tab ke DashboardUser
+        DashboardUser(
+          onNavigateToTab: (int index) {
+            _onItemTapped(index);
+          },
+        ), 
+        const LaporankuPage(), // Index 1
+        const ProfilPage(),    // Index 2
+      ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // IndexedStack menjaga state halaman agar tidak reset saat berpindah tab
-      body: IndexedStack(index: _selectedIndex, children: _pages),
+      body: IndexedStack(
+        index: _selectedIndex,
+        children: _pages,
+      ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           boxShadow: [
@@ -39,20 +53,15 @@ class _BottomNavState extends State<BottomNav> {
             ),
           ],
         ),
-        // Menggunakan NavigationBar (Material 3) agar otomatis mendapatkan efek pill-shape indicator
+        // Tetap menggunakan NavigationBar Material 3 yang cantik
         child: NavigationBarTheme(
           data: NavigationBarThemeData(
-            indicatorColor:
-                AppTheme.primaryColor, // Warna kapsul penanda aktif (#0C344D)
+            indicatorColor: AppTheme.primaryColor,
             iconTheme: WidgetStateProperty.resolveWith((states) {
               if (states.contains(WidgetState.selected)) {
-                return const IconThemeData(
-                  color: Colors.white,
-                ); // Warna ikon saat aktif
+                return const IconThemeData(color: Colors.white);
               }
-              return const IconThemeData(
-                color: Colors.grey,
-              ); // Warna ikon saat tidak aktif
+              return const IconThemeData(color: Colors.grey);
             }),
             labelTextStyle: WidgetStateProperty.resolveWith((states) {
               if (states.contains(WidgetState.selected)) {
@@ -72,15 +81,10 @@ class _BottomNavState extends State<BottomNav> {
           child: NavigationBar(
             backgroundColor: Colors.white,
             elevation: 0,
-            height: 70, // Tinggi navigasi bar yang proporsional
+            height: 70,
             selectedIndex: _selectedIndex,
-            labelBehavior: NavigationDestinationLabelBehavior
-                .alwaysShow, // Teks selalu muncul sesuai contoh UI
-            onDestinationSelected: (int index) {
-              setState(() {
-                _selectedIndex = index;
-              });
-            },
+            labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+            onDestinationSelected: _onItemTapped,
             destinations: const [
               NavigationDestination(
                 icon: Icon(Icons.home_outlined),
@@ -90,7 +94,7 @@ class _BottomNavState extends State<BottomNav> {
               NavigationDestination(
                 icon: Icon(Icons.assignment_outlined),
                 selectedIcon: Icon(Icons.assignment),
-                label: 'Sambatku',
+                label: 'Laporanku',
               ),
               NavigationDestination(
                 icon: Icon(Icons.person_outline),

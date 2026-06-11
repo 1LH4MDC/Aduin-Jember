@@ -4,11 +4,14 @@ import '../../core/theme.dart';
 import '../../services/auth_service.dart';
 import '../../services/woro_service.dart';
 import '../sambat/create_sambat_page.dart';
-import '../sambat/my_sambat_page.dart';
 import 'woro_woro_detail_page.dart';
+import 'gawat_page.dart';
 
 class DashboardUser extends StatefulWidget {
-  const DashboardUser({super.key});
+  // Tambahkan parameter fungsi callback ini
+  final Function(int)? onNavigateToTab;
+
+  const DashboardUser({super.key, this.onNavigateToTab});
 
   @override
   State<DashboardUser> createState() => _DashboardUserState();
@@ -50,24 +53,30 @@ class _DashboardUserState extends State<DashboardUser> {
             children: [
               const SizedBox(height: 10),
 
-              // 1. Search Bar
-              _buildSearchBar(),
+              _buildInfoBanner(),
               const SizedBox(height: 24),
 
-              // 2. Woro-Woro Jember (Horizontal List)
-              const Text(
-                'Woro-Woro Jember',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: AppTheme.textPrimary,
-                ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Woro-Woro Jember',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.textPrimary,
+                    ),
+                  ),
+                  Text(
+                    'Geser ->',
+                    style: TextStyle(fontSize: 12, color: Colors.grey.shade400),
+                  ),
+                ],
               ),
               const SizedBox(height: 12),
               _buildWoroWoroList(context),
               const SizedBox(height: 24),
 
-              // 3. Fitur Utama
               const Text(
                 'Fitur Utama',
                 style: TextStyle(
@@ -80,8 +89,7 @@ class _DashboardUserState extends State<DashboardUser> {
               _buildFiturUtama(context),
               const SizedBox(height: 24),
 
-              // 4. Gawat (SOS)
-              _buildGawatButton(),
+              _buildGawatButton(context),
               const SizedBox(height: 30),
             ],
           ),
@@ -103,7 +111,12 @@ class _DashboardUserState extends State<DashboardUser> {
           color: Colors.black87,
           size: 28,
         ),
-        onPressed: () {},
+        onPressed: () {
+          // PERBAIKAN: Gunakan fungsi callback untuk pindah ke tab Profil (index 2)
+          if (widget.onNavigateToTab != null) {
+            widget.onNavigateToTab!(2);
+          }
+        },
       ),
       title: Column(
         children: [
@@ -128,27 +141,66 @@ class _DashboardUserState extends State<DashboardUser> {
     );
   }
 
-  // --- KOMPONEN SEARCH BAR ---
-  Widget _buildSearchBar() {
+  // --- WIDGET BARU: BANNER INFORMASI ---
+  Widget _buildInfoBanner() {
     return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(30),
-        border: Border.all(color: Colors.grey.withValues(alpha: 0.3)),
-      ),
-      child: const TextField(
-        decoration: InputDecoration(
-          hintText: 'Cari informasi atau sambat...',
-          hintStyle: TextStyle(color: Colors.grey, fontSize: 14),
-          prefixIcon: Icon(Icons.search, color: Colors.grey),
-          border: InputBorder.none,
-          contentPadding: EdgeInsets.symmetric(vertical: 14),
+        gradient: LinearGradient(
+          colors: [AppTheme.primaryColor, AppTheme.primaryColor.withValues(alpha: 0.8)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.primaryColor.withValues(alpha: 0.3),
+            blurRadius: 10,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.2),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.campaign_rounded, color: Colors.white, size: 28),
+          ),
+          const SizedBox(width: 16),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Suarakan Aspirasimu!',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+                SizedBox(height: 4),
+                Text(
+                  'Bersama membangun Jember yang lebih baik melalui layanan pengaduan terpadu.',
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: 11,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  // --- KOMPONEN WORO-WORO (HORIZONTAL SCROLL) ---
+  // --- KOMPONEN WORO-WORO TETAP ---
   Widget _buildWoroWoroList(BuildContext context) {
     return FutureBuilder<List<Map<String, dynamic>>>(
       future: _woroFuture,
@@ -174,12 +226,19 @@ class _DashboardUserState extends State<DashboardUser> {
         }
         final woroList = snapshot.data ?? [];
         if (woroList.isEmpty) {
-          return const SizedBox(
-            height: 180,
+          return SizedBox(
+            height: 160,
             child: Center(
-              child: Text(
-                'Tidak ada pengumuman saat ini.',
-                style: TextStyle(color: Colors.grey, fontSize: 13),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.inbox_outlined, color: Colors.grey.shade300, size: 40),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Belum ada pengumuman terbaru.',
+                    style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
+                  ),
+                ],
               ),
             ),
           );
@@ -206,7 +265,7 @@ class _DashboardUserState extends State<DashboardUser> {
                       builder: (context) => WoroWoroDetailPage(
                         title: item['judul']?.toString() ?? '',
                         date: dateStr,
-                        konten: item['konten']?.toString() ?? '',
+                        konten: item['konten']?.toString() ?? '', 
                         kategori: item['kategori']?.toString() ?? 'Lainnya',
                       ),
                     ),
@@ -279,11 +338,10 @@ class _DashboardUserState extends State<DashboardUser> {
     );
   }
 
-  // --- KOMPONEN FITUR UTAMA (SAMBAT & TRACKING) ---
+  // --- KOMPONEN FITUR UTAMA ---
   Widget _buildFiturUtama(BuildContext context) {
     return Row(
       children: [
-        // Card Sambat
         Expanded(
           child: _buildFiturCard(
             backgroundColor: AppTheme.primaryColor,
@@ -312,10 +370,9 @@ class _DashboardUserState extends State<DashboardUser> {
           ),
         ),
         const SizedBox(width: 16),
-        // Card Tracking
         Expanded(
           child: _buildFiturCard(
-            backgroundColor: const Color(0xFFE4E6FB), // Warna ungu/biru pudar
+            backgroundColor: const Color(0xFFE4E6FB), 
             textColor: AppTheme.primaryColor,
             iconRow: const Icon(
               Icons.manage_search_rounded,
@@ -325,10 +382,10 @@ class _DashboardUserState extends State<DashboardUser> {
             title: 'TRACKING',
             subtitle: 'Pantau kemajuan sambat Anda',
             onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute<void>(builder: (_) => const MySambatPage()),
-              );
+              // PERBAIKAN: Gunakan fungsi callback untuk pindah ke tab Laporanku (index 1)
+              if (widget.onNavigateToTab != null) {
+                widget.onNavigateToTab!(1);
+              }
             },
           ),
         ),
@@ -384,56 +441,63 @@ class _DashboardUserState extends State<DashboardUser> {
     );
   }
 
-  // --- KOMPONEN GAWAT DARURAT ---
-  Widget _buildGawatButton() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      decoration: BoxDecoration(
-        color: const Color(0xFFB71C1C), // Merah gelap
+  // --- KOMPONEN GAWAT DARURAT TETAP ---
+  Widget _buildGawatButton(BuildContext context) {
+    return Material(
+      color: const Color(0xFFB71C1C), 
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
         borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          // Logo lingkaran SOS putih
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-            ),
-            child: const Text(
-              'SOS',
-              style: TextStyle(
-                color: Color(0xFFB71C1C),
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-              ),
-            ),
-          ),
-          const SizedBox(width: 16),
-          // Teks keterangan
-          const Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'GAWAT',
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const GawatPage()),
+          );
+        },
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                ),
+                child: const Text(
+                  'SOS',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: Color(0xFFB71C1C),
                     fontWeight: FontWeight.bold,
-                    fontSize: 18,
+                    fontSize: 16,
                   ),
                 ),
-                SizedBox(height: 4),
-                Text(
-                  'Hanya untuk situasi mengancam jiwa\n(Kecelakaan, Kriminal)',
-                  style: TextStyle(color: Colors.white70, fontSize: 11),
+              ),
+              const SizedBox(width: 16),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'GAWAT',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                      ),
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      'Hanya untuk situasi mengancam jiwa\n(Kecelakaan, Kriminal)',
+                      style: TextStyle(color: Colors.white70, fontSize: 11),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
