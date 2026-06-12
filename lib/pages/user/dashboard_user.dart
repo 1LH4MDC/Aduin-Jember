@@ -19,15 +19,20 @@ class DashboardUser extends StatefulWidget {
 
 class _DashboardUserState extends State<DashboardUser> {
   late Future<List<Map<String, dynamic>>> _woroFuture;
+  bool _woroLoaded = false;
 
   @override
-  void initState() {
-    super.initState();
-    _loadWoro();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_woroLoaded) {
+      _woroLoaded = true;
+      _loadWoro();
+    }
   }
 
   void _loadWoro() {
-    _woroFuture = WoroService().fetchWoro();
+    final auth = context.read<AuthController>();
+    _woroFuture = WoroService(apiClient: auth.apiClient).fetchWoro();
   }
 
   Future<void> _refresh() async {
@@ -214,12 +219,30 @@ class _DashboardUserState extends State<DashboardUser> {
           );
         }
         if (snapshot.hasError) {
+          debugPrint('Woro-woro error: ${snapshot.error}');
           return SizedBox(
             height: 180,
             child: Center(
-              child: Text(
-                'Gagal memuat pengumuman',
-                style: TextStyle(color: Colors.red.shade700, fontSize: 13),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    'Gagal memuat pengumuman',
+                    style: TextStyle(color: Colors.red.shade700, fontSize: 13),
+                  ),
+                  const SizedBox(height: 8),
+                  GestureDetector(
+                    onTap: () => setState(() => _loadWoro()),
+                    child: Text(
+                      'Coba lagi',
+                      style: TextStyle(
+                        color: AppTheme.primaryColor,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           );
@@ -252,10 +275,13 @@ class _DashboardUserState extends State<DashboardUser> {
             itemCount: woroList.length,
             itemBuilder: (context, index) {
               final item = woroList[index];
-              final createdAtStr = item['createdAt']?.toString() ?? '';
+              final createdAtStr = (item['createdAt'] ?? item['created_at'] ?? '').toString();
               final dateStr = createdAtStr.isNotEmpty
                   ? createdAtStr.substring(0, 10)
                   : '-';
+
+              final fotoUrl = (item['fotoUrl'] ?? item['photo_url'] ?? '').toString();
+              final hasImage = fotoUrl.isNotEmpty;
 
               return InkWell(
                 onTap: () {
@@ -263,10 +289,11 @@ class _DashboardUserState extends State<DashboardUser> {
                     context,
                     MaterialPageRoute(
                       builder: (context) => WoroWoroDetailPage(
-                        title: item['judul']?.toString() ?? '',
+                        title: (item['judul'] ?? item['title'] ?? '').toString(),
                         date: dateStr,
-                        konten: item['konten']?.toString() ?? '', 
-                        kategori: item['kategori']?.toString() ?? 'Lainnya',
+                        konten: (item['konten'] ?? item['content'] ?? '').toString(), 
+                        kategori: (item['kategori'] ?? item['category'] ?? 'Lainnya').toString(),
+                        fotoUrl: fotoUrl,
                       ),
                     ),
                   );
@@ -283,21 +310,35 @@ class _DashboardUserState extends State<DashboardUser> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Container(
-                        height: 100,
-                        decoration: const BoxDecoration(
-                          color: Color(0xFFE0E0E0),
-                          borderRadius: BorderRadius.only(
-                            topLeft: Radius.circular(12),
-                            topRight: Radius.circular(12),
-                          ),
+                      ClipRRect(
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(12),
+                          topRight: Radius.circular(12),
                         ),
-                        child: const Center(
-                          child: Icon(
-                            Icons.image_outlined,
-                            color: Colors.grey,
-                            size: 40,
-                          ),
+                        child: Container(
+                          height: 100,
+                          color: const Color(0xFFE0E0E0),
+                          child: hasImage
+                              ? Image.network(
+                                  fotoUrl,
+                                  width: double.infinity,
+                                  height: 100,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (c, e, s) => const Center(
+                                    child: Icon(
+                                      Icons.broken_image_outlined,
+                                      color: Colors.grey,
+                                      size: 40,
+                                    ),
+                                  ),
+                                )
+                              : const Center(
+                                  child: Icon(
+                                    Icons.campaign_rounded,
+                                    color: Colors.grey,
+                                    size: 40,
+                                  ),
+                                ),
                         ),
                       ),
                       Padding(
@@ -315,7 +356,7 @@ class _DashboardUserState extends State<DashboardUser> {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              item['judul']?.toString() ?? '',
+                              (item['judul'] ?? item['title'] ?? '').toString(),
                               style: const TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 14,
@@ -358,7 +399,7 @@ class _DashboardUserState extends State<DashboardUser> {
               ],
             ),
             title: 'SAMBAT',
-            subtitle: 'Lapor Jalan Rusak, Sampah, dll',
+            subtitle: 'Sambat Jalan Rusak, Sampah, dll',
             onTap: () {
               Navigator.push(
                 context,
@@ -382,7 +423,7 @@ class _DashboardUserState extends State<DashboardUser> {
             title: 'TRACKING',
             subtitle: 'Pantau kemajuan sambat Anda',
             onTap: () {
-              // PERBAIKAN: Gunakan fungsi callback untuk pindah ke tab Laporanku (index 1)
+              // PERBAIKAN: Gunakan fungsi callback untuk pindah ke tab Sambatku (index 1)
               if (widget.onNavigateToTab != null) {
                 widget.onNavigateToTab!(1);
               }

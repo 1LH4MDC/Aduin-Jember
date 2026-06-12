@@ -3,7 +3,7 @@ import '../../core/theme.dart';
 import 'dashboard_admin.dart';
 import 'woro_woro_admin.dart';
 import 'sambat_admin.dart';
-import 'users_admin.dart';
+import 'gawat_admin.dart';
 
 class BottomNavAdmin extends StatefulWidget {
   const BottomNavAdmin({super.key});
@@ -15,12 +15,22 @@ class BottomNavAdmin extends StatefulWidget {
 class _BottomNavAdminState extends State<BottomNavAdmin> {
   int _selectedIndex = 0;
 
-  final List<Widget> _pages = [
-    const DashboardAdmin(),
-    const WoroWoroAdmin(),
-    const LaporanAdmin(),
-    const UsersAdmin(),
-  ];
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+  }
+
+  List<Widget> get _pages => [
+        DashboardAdmin(
+          onNavigateToTab: (int index) {
+            _onItemTapped(index);
+          },
+        ),
+        const WoroWoroAdmin(),
+        const SambatAdminPage(),
+        const GawatAdminPage(),
+      ];
 
   @override
   Widget build(BuildContext context) {
@@ -84,9 +94,9 @@ class _BottomNavAdminState extends State<BottomNavAdmin> {
                 label: 'Sambat',
               ),
               NavigationDestination(
-                icon: Icon(Icons.people_outline),
-                selectedIcon: Icon(Icons.people),
-                label: 'Users',
+                icon: Icon(Icons.emergency_outlined),
+                selectedIcon: Icon(Icons.emergency),
+                label: 'Gawat',
               ),
             ],
           ),

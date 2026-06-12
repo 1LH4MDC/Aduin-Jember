@@ -6,6 +6,7 @@ class WoroWoroDetailPage extends StatelessWidget {
   final String date;
   final String konten;
   final String kategori;
+  final String? fotoUrl;
 
   const WoroWoroDetailPage({
     super.key,
@@ -13,10 +14,13 @@ class WoroWoroDetailPage extends StatelessWidget {
     required this.date,
     required this.konten,
     required this.kategori,
+    this.fotoUrl,
   });
 
   @override
   Widget build(BuildContext context) {
+    final bool hasImage = fotoUrl != null && fotoUrl!.isNotEmpty;
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -58,9 +62,17 @@ class WoroWoroDetailPage extends StatelessWidget {
                 width: double.infinity,
                 height: 200,
                 color: const Color(0xFFE0E0E0),
-                child: const Center(
-                  child: Icon(Icons.image_outlined, color: Colors.grey, size: 50),
-                ),
+                child: hasImage
+                    ? Image.network(
+                        fotoUrl!,
+                        fit: BoxFit.cover,
+                        errorBuilder: (c, e, s) => const Center(
+                          child: Icon(Icons.broken_image, color: Colors.grey, size: 50),
+                        ),
+                      )
+                    : const Center(
+                        child: Icon(Icons.image_outlined, color: Colors.grey, size: 50),
+                      ),
               ),
             ),
             const SizedBox(height: 20),

@@ -51,5 +51,9 @@
 	<string>Aplikasi membutuhkan lokasi untuk menandai titik laporan.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>Aplikasi membutuhkan lokasi untuk menandai titik laporan.</string>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>tel</string>
+	</array>
 </dict>
 </plist>

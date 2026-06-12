@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme.dart';
 import '../../services/auth_service.dart';
@@ -13,12 +14,51 @@ class ProfilPage extends StatefulWidget {
 }
 
 class _ProfilPageState extends State<ProfilPage> {
-  Future<void> _reloadAndNavigateToEdit(BuildContext context, AuthController auth) async {
+  final _picker = ImagePicker();
+  bool _isUploadingPhoto = false;
+
+  Future<void> _pickAndUploadPhoto(AuthController auth) async {
+    final picked = await _picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 85,
+    );
+    if (picked == null || !mounted) return;
+
+    setState(() => _isUploadingPhoto = true);
+    try {
+      final bytes = await picked.readAsBytes();
+      await auth.uploadProfilePhoto(
+        imageBytes: bytes,
+        imageName: picked.name.isNotEmpty ? picked.name : 'profil.jpg',
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Foto profil berhasil diperbarui!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal upload foto: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isUploadingPhoto = false);
+    }
+  }
+
+  Future<void> _reloadAndNavigateToEdit(
+      BuildContext context, AuthController auth) async {
     final result = await Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => const EditProfilPage()),
     );
-    // Jika edit berhasil (halaman edit mengembalikan true), reload profil
     if (result == true && context.mounted) {
       await auth.loadProfile();
     }
@@ -28,6 +68,8 @@ class _ProfilPageState extends State<ProfilPage> {
   Widget build(BuildContext context) {
     final auth = Provider.of<AuthController>(context);
     final userProfile = auth.profile ?? {};
+    final fotoProfilUrl = userProfile['fotoProfil']?.toString() ?? '';
+    final hasPhoto = fotoProfilUrl.isNotEmpty;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
@@ -57,21 +99,118 @@ class _ProfilPageState extends State<ProfilPage> {
             Center(
               child: Column(
                 children: [
-                  CircleAvatar(
-                    radius: 45,
-                    backgroundColor: Colors.white,
-                    child: CircleAvatar(
-                      radius: 42,
-                      backgroundColor: const Color(0xFFF0F0F0),
-                      backgroundImage: userProfile['fotoProfil'] != null && userProfile['fotoProfil'].toString().isNotEmpty
-                          ? NetworkImage(userProfile['fotoProfil'].toString())
-                          : null,
-                      child: userProfile['fotoProfil'] == null || userProfile['fotoProfil'].toString().isEmpty
-                          ? const Icon(Icons.person_outline, size: 40, color: Colors.grey)
-                          : null,
+                  // --- Avatar dengan tombol kamera ---
+                  Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      // Lingkaran luar (border efek)
+                      Container(
+                        width: 100,
+                        height: 100,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: AppTheme.primaryColor.withValues(alpha: 0.3),
+                            width: 3,
+                          ),
+                        ),
+                      ),
+                      // Avatar utama
+                      GestureDetector(
+                        onTap: _isUploadingPhoto
+                            ? null
+                            : () => _pickAndUploadPhoto(auth),
+                        child: Stack(
+                          children: [
+                            CircleAvatar(
+                              radius: 44,
+                              backgroundColor: const Color(0xFFF0F0F0),
+                              backgroundImage:
+                                  hasPhoto ? NetworkImage(fotoProfilUrl) : null,
+                              child: !hasPhoto
+                                  ? const Icon(
+                                      Icons.person_outline,
+                                      size: 40,
+                                      color: Colors.grey,
+                                    )
+                                  : null,
+                            ),
+                            // Overlay gelap saat loading
+                            if (_isUploadingPhoto)
+                              Positioned.fill(
+                                child: ClipOval(
+                                  child: Container(
+                                    color: Colors.black45,
+                                    child: const Center(
+                                      child: SizedBox(
+                                        width: 24,
+                                        height: 24,
+                                        child: CircularProgressIndicator(
+                                          color: Colors.white,
+                                          strokeWidth: 2.5,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                      // Tombol kamera (pojok kanan bawah)
+                      if (!_isUploadingPhoto)
+                        Positioned(
+                          bottom: 2,
+                          right: 2,
+                          child: GestureDetector(
+                            onTap: () => _pickAndUploadPhoto(auth),
+                            child: Container(
+                              width: 30,
+                              height: 30,
+                              decoration: BoxDecoration(
+                                color: AppTheme.primaryColor,
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                    color: Colors.white, width: 2),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color:
+                                        Colors.black.withValues(alpha: 0.15),
+                                    blurRadius: 6,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: const Icon(
+                                Icons.camera_alt_rounded,
+                                color: Colors.white,
+                                size: 15,
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  // Label klik untuk ganti foto
+                  GestureDetector(
+                    onTap: _isUploadingPhoto
+                        ? null
+                        : () => _pickAndUploadPhoto(auth),
+                    child: Text(
+                      _isUploadingPhoto ? 'Mengunggah...' : 'Ubah Foto Profil',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: _isUploadingPhoto
+                            ? Colors.grey
+                            : AppTheme.primaryColor,
+                        fontWeight: FontWeight.w600,
+                        decoration: TextDecoration.underline,
+                        decorationColor: AppTheme.primaryColor,
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
                   Text(
                     auth.displayName,
                     style: const TextStyle(
@@ -88,9 +227,14 @@ class _ProfilPageState extends State<ProfilPage> {
             // 2. Data Kartu Informasi Pribadi
             _buildInfoCard('Nama Lengkap', auth.displayName),
             _buildInfoCard('Email', auth.email),
-            _buildInfoCard('NIK', userProfile['nik']?.toString() ?? userProfile['phone']?.toString() ?? '-'),
-            _buildInfoCard('Alamat Tinggal', userProfile['alamat']?.toString() ?? userProfile['alamatLengkap']?.toString() ?? userProfile['address']?.toString() ?? '-'),
-            
+            _buildInfoCard(
+              'NIK',
+              userProfile['nik']?.toString() ??
+                  userProfile['phone']?.toString() ??
+                  '-',
+            ),
+
+
             const SizedBox(height: 8),
 
             // 3. Tombol Edit Akun
@@ -111,7 +255,8 @@ class _ProfilPageState extends State<ProfilPage> {
                       if (context.mounted) {
                         Navigator.pushAndRemoveUntil(
                           context,
-                          MaterialPageRoute(builder: (context) => const LoginPage()),
+                          MaterialPageRoute(
+                              builder: (context) => const LoginPage()),
                           (route) => false,
                         );
                       }
@@ -163,7 +308,7 @@ class _ProfilPageState extends State<ProfilPage> {
           ),
           const SizedBox(height: 6),
           Text(
-            value,
+            value.isEmpty ? '-' : value,
             style: const TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.bold,
@@ -200,7 +345,8 @@ class _ProfilPageState extends State<ProfilPage> {
           onTap: onTap,
           borderRadius: BorderRadius.circular(12),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [

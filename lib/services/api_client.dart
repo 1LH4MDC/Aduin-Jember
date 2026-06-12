@@ -8,8 +8,7 @@ class ApiClient {
   ApiClient({http.Client? httpClient})
     : _httpClient = httpClient ?? http.Client();
 
-  static const String _tokenKey =
-      'sbp_b3bf9d7d4fcdd16dd683a9c05a9d42ad3c8a3d4d';
+  static const String _tokenKey = 'auth_token';
   final http.Client _httpClient;
 
   String? _token;

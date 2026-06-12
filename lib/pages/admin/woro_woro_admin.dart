@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../core/theme.dart';
+import '../../services/auth_service.dart';
 import '../../services/woro_service.dart';
 import 'tambah_woro_woro_page.dart';
 
@@ -11,17 +13,23 @@ class WoroWoroAdmin extends StatefulWidget {
 }
 
 class _WoroWoroAdminState extends State<WoroWoroAdmin> {
-  final _woroService = WoroService();
+  late WoroService _woroService;
   List<Map<String, dynamic>> _woroList = [];
   List<Map<String, dynamic>> _filteredList = [];
   bool _isLoading = true;
   String _searchQuery = '';
   final _searchController = TextEditingController();
+  bool _woroLoaded = false;
 
   @override
-  void initState() {
-    super.initState();
-    _loadWoro();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final auth = context.read<AuthController>();
+    _woroService = WoroService(apiClient: auth.apiClient);
+    if (!_woroLoaded) {
+      _woroLoaded = true;
+      _loadWoro();
+    }
   }
 
   @override
@@ -176,11 +184,12 @@ class _WoroWoroAdminState extends State<WoroWoroAdmin> {
                               final dateStr = createdAtStr.isNotEmpty
                                   ? createdAtStr.substring(0, 10)
                                   : '-';
+                              final photoUrl = (item['fotoUrl'] ?? item['photo_url'] ?? '').toString();
                               return _buildWoroItem(
                                 idWoro: idWoro,
                                 title: title,
                                 date: dateStr,
-                                hasImage: false,
+                                photoUrl: photoUrl,
                                 item: item,
                               );
                             },
@@ -214,9 +223,11 @@ class _WoroWoroAdminState extends State<WoroWoroAdmin> {
     required String idWoro,
     required String title,
     required String date,
-    required bool hasImage,
+    required String photoUrl,
     required Map<String, dynamic> item,
   }) {
+    final bool hasImage = photoUrl.isNotEmpty;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(12),
@@ -241,10 +252,24 @@ class _WoroWoroAdminState extends State<WoroWoroAdmin> {
               color: const Color(0xFFEEEEEE),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(
-              hasImage ? Icons.image : Icons.image_outlined,
-              color: Colors.grey,
-            ),
+            child: hasImage
+                ? ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.network(
+                      photoUrl,
+                      width: 60,
+                      height: 60,
+                      fit: BoxFit.cover,
+                      errorBuilder: (c, e, s) => const Icon(
+                        Icons.broken_image,
+                        color: Colors.grey,
+                      ),
+                    ),
+                  )
+                : const Icon(
+                    Icons.image_outlined,
+                    color: Colors.grey,
+                  ),
           ),
           const SizedBox(width: 16),
           // Judul dan Tanggal

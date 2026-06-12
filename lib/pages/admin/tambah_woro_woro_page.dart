@@ -1,5 +1,10 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:provider/provider.dart';
+
 import '../../core/theme.dart';
+import '../../services/auth_service.dart';
 import '../../services/woro_service.dart';
 
 class TambahWoroWoroPage extends StatefulWidget {
@@ -14,7 +19,7 @@ class TambahWoroWoroPage extends StatefulWidget {
 }
 
 class _TambahWoroWoroPageState extends State<TambahWoroWoroPage> {
-  final _woroService = WoroService();
+  late WoroService _woroService;
   final _judulController = TextEditingController();
   final _kontenController = TextEditingController();
 
@@ -28,8 +33,22 @@ class _TambahWoroWoroPageState extends State<TambahWoroWoroPage> {
     'Lainnya',
   ];
 
+  // Image Upload State
+  final _picker = ImagePicker();
+  Uint8List? _imageBytes;
+  String? _imageName;
+  bool _isPickingImage = false;
+  String? _existingFotoUrl;
+
   bool get _isEditMode => widget.woro != null;
   String get _idWoro => widget.woro?['idWoro']?.toString() ?? '';
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final auth = context.read<AuthController>();
+    _woroService = WoroService(apiClient: auth.apiClient);
+  }
 
   @override
   void initState() {
@@ -41,6 +60,7 @@ class _TambahWoroWoroPageState extends State<TambahWoroWoroPage> {
       _selectedKategori = (_kategoriList.contains(existingKategori))
           ? existingKategori
           : null;
+      _existingFotoUrl = (widget.woro?['fotoUrl'] ?? widget.woro?['photo_url'] ?? '').toString();
     }
   }
 
@@ -49,6 +69,35 @@ class _TambahWoroWoroPageState extends State<TambahWoroWoroPage> {
     _judulController.dispose();
     _kontenController.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickImage() async {
+    setState(() => _isPickingImage = true);
+
+    try {
+      final picked = await _picker.pickImage(
+        source: kIsWeb ? ImageSource.gallery : ImageSource.gallery, // Gallery is preferred for Woro banners
+        imageQuality: 85,
+      );
+
+      if (picked != null) {
+        final bytes = await picked.readAsBytes();
+        setState(() {
+          _imageBytes = bytes;
+          _imageName = picked.name.isNotEmpty ? picked.name : 'woro.jpg';
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal memilih gambar: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isPickingImage = false);
+      }
+    }
   }
 
   Future<void> _submit() async {
@@ -77,18 +126,30 @@ class _TambahWoroWoroPageState extends State<TambahWoroWoroPage> {
     setState(() => _isLoading = true);
 
     try {
+      String? finalFotoUrl = _existingFotoUrl;
+
+      // Upload image to Supabase first if a new one is selected
+      if (_imageBytes != null) {
+        finalFotoUrl = await _woroService.uploadWoroImage(
+          imageBytes: _imageBytes!,
+          imageName: _imageName ?? 'woro.jpg',
+        );
+      }
+
       if (_isEditMode) {
         await _woroService.updateWoro(
           _idWoro,
           judul: judul,
           konten: konten,
           kategori: _selectedKategori!,
+          fotoUrl: finalFotoUrl,
         );
       } else {
         await _woroService.createWoro(
           judul: judul,
           konten: konten,
           kategori: _selectedKategori!,
+          fotoUrl: finalFotoUrl,
         );
       }
 
@@ -121,6 +182,8 @@ class _TambahWoroWoroPageState extends State<TambahWoroWoroPage> {
 
   @override
   Widget build(BuildContext context) {
+    final bool hasImageToShow = _imageBytes != null || (_existingFotoUrl != null && _existingFotoUrl!.isNotEmpty);
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -142,7 +205,7 @@ class _TambahWoroWoroPageState extends State<TambahWoroWoroPage> {
       body: SafeArea(
         child: Column(
           children: [
-            // Konten Form (Bisa di-scroll)
+            // Konten Form
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(20.0),
@@ -151,35 +214,59 @@ class _TambahWoroWoroPageState extends State<TambahWoroWoroPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // 1. Upload Banner
-                    _buildLabel('Banner Pengumuman'),
-                    Container(
-                      width: double.infinity,
-                      height: 140,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF8F9FA),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: Colors.grey.withValues(alpha: 0.4),
-                          style: BorderStyle.solid,
+                    _buildLabel('Banner Pengumuman (Tap untuk Mengubah)'),
+                    GestureDetector(
+                      onTap: _isPickingImage || _isLoading ? null : _pickImage,
+                      child: Container(
+                        width: double.infinity,
+                        height: 160,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF8F9FA),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: Colors.grey.withValues(alpha: 0.4),
+                          ),
                         ),
-                      ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(
-                            Icons.upload_file,
-                            color: AppTheme.primaryColor,
-                            size: 32,
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Unggah Banner Informasi (Rekomendasi 16:9)',
-                            style: TextStyle(
-                              color: Colors.grey.shade600,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: _isPickingImage
+                              ? const Center(
+                                  child: CircularProgressIndicator(color: AppTheme.primaryColor),
+                                )
+                              : hasImageToShow
+                                  ? (_imageBytes != null
+                                      ? Image.memory(
+                                          _imageBytes!,
+                                          fit: BoxFit.cover,
+                                          width: double.infinity,
+                                        )
+                                      : Image.network(
+                                          _existingFotoUrl!,
+                                          fit: BoxFit.cover,
+                                          width: double.infinity,
+                                          errorBuilder: (c, e, s) => const Center(
+                                            child: Icon(Icons.broken_image, size: 40, color: Colors.grey),
+                                          ),
+                                        ))
+                                  : Column(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        const Icon(
+                                          Icons.add_photo_alternate_outlined,
+                                          color: AppTheme.primaryColor,
+                                          size: 36,
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Text(
+                                          'Unggah Banner Informasi (Rekomendasi 16:9)',
+                                          style: TextStyle(
+                                            color: Colors.grey.shade600,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                        ),
                       ),
                     ),
                     const SizedBox(height: 20),
@@ -223,11 +310,13 @@ class _TambahWoroWoroPageState extends State<TambahWoroWoroPage> {
                               ),
                             );
                           }).toList(),
-                          onChanged: (newValue) {
-                            setState(() {
-                              _selectedKategori = newValue;
-                            });
-                          },
+                          onChanged: _isLoading
+                              ? null
+                              : (newValue) {
+                                  setState(() {
+                                    _selectedKategori = newValue;
+                                  });
+                                },
                         ),
                       ),
                     ),
@@ -245,7 +334,7 @@ class _TambahWoroWoroPageState extends State<TambahWoroWoroPage> {
               ),
             ),
 
-            // Bagian Bawah: Tombol Batal & Simpan (Fixed di bawah)
+            // Bagian Bawah: Tombol Batal & Simpan
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
               decoration: BoxDecoration(
@@ -258,8 +347,7 @@ class _TambahWoroWoroPageState extends State<TambahWoroWoroPage> {
                 children: [
                   Expanded(
                     child: OutlinedButton(
-                      onPressed:
-                          _isLoading ? null : () => Navigator.pop(context),
+                      onPressed: _isLoading ? null : () => Navigator.pop(context),
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         side: const BorderSide(color: AppTheme.primaryColor),
@@ -297,9 +385,7 @@ class _TambahWoroWoroPageState extends State<TambahWoroWoroPage> {
                               ),
                             )
                           : Text(
-                              _isEditMode
-                                  ? 'Perbarui Woro-Woro'
-                                  : 'Simpan Woro-Woro',
+                              _isEditMode ? 'Perbarui Woro-Woro' : 'Simpan Woro-Woro',
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.bold,
@@ -316,7 +402,7 @@ class _TambahWoroWoroPageState extends State<TambahWoroWoroPage> {
     );
   }
 
-  // Helper Widget untuk Label Title di atas form
+  // Helper Widget untuk Label Title
   Widget _buildLabel(String text) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8.0),
@@ -331,7 +417,7 @@ class _TambahWoroWoroPageState extends State<TambahWoroWoroPage> {
     );
   }
 
-  // Helper Widget untuk Text Field Standar
+  // Helper Widget untuk Text Field
   Widget _buildTextField({
     required String hint,
     required TextEditingController controller,
@@ -340,14 +426,18 @@ class _TambahWoroWoroPageState extends State<TambahWoroWoroPage> {
     return TextField(
       controller: controller,
       maxLines: maxLines,
+      enabled: !_isLoading,
       decoration: InputDecoration(
         hintText: hint,
         hintStyle: const TextStyle(color: Colors.grey, fontSize: 14),
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
           borderSide: BorderSide(color: Colors.grey.withValues(alpha: 0.4)),
+        ),
+        disabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: Colors.grey.withValues(alpha: 0.2)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
@@ -357,4 +447,3 @@ class _TambahWoroWoroPageState extends State<TambahWoroWoroPage> {
     );
   }
 }
-

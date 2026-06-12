@@ -3,7 +3,7 @@ import '../../core/theme.dart';
 
 // Import ketiga halaman konten
 import 'dashboard_user.dart';
-import 'laporanku_page.dart';
+import 'sambatku_page.dart';
 import 'profil_page.dart';
 
 class BottomNav extends StatefulWidget {
@@ -32,7 +32,7 @@ class _BottomNavState extends State<BottomNav> {
             _onItemTapped(index);
           },
         ), 
-        const LaporankuPage(), // Index 1
+        const SambatkuPage(), // Index 1
         const ProfilPage(),    // Index 2
       ];
 
@@ -94,7 +94,7 @@ class _BottomNavState extends State<BottomNav> {
               NavigationDestination(
                 icon: Icon(Icons.assignment_outlined),
                 selectedIcon: Icon(Icons.assignment),
-                label: 'Laporanku',
+                label: 'Sambatku',
               ),
               NavigationDestination(
                 icon: Icon(Icons.person_outline),

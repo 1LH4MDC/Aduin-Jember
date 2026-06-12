@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../core/app_config.dart';
 import 'api_client.dart';
 
 class AuthController extends ChangeNotifier {
@@ -97,10 +99,58 @@ class AuthController extends ChangeNotifier {
         body: {
           'nama': nama.trim(),
           'nik': nik.trim(),
-          if (fotoProfil != null) 'fotoProfil': fotoProfil,
+          'fotoProfil': ?fotoProfil,
         },
       );
       await loadProfile();
+    } catch (error) {
+      errorMessage = error.toString();
+      rethrow;
+    } finally {
+      isBusy = false;
+      notifyListeners();
+    }
+  }
+
+  /// Upload foto profil ke Supabase bucket "foto-profil",
+  /// lalu simpan public URL-nya ke API /api/profil.
+  Future<String> uploadProfilePhoto({
+    required Uint8List imageBytes,
+    required String imageName,
+  }) async {
+    if (!AppConfig.hasSupabaseConfig) {
+      throw Exception(
+        'Konfigurasi Supabase belum diset. Isi SUPABASE_URL dan SUPABASE_ANON_KEY.',
+      );
+    }
+
+    isBusy = true;
+    notifyListeners();
+
+    try {
+      // 1. Upload gambar ke Supabase Storage
+      final safeName = imageName.trim().isEmpty
+          ? 'profil.jpg'
+          : imageName.trim().replaceAll(RegExp(r'[^A-Za-z0-9._-]'), '_');
+      final objectPath =
+          'profil/${DateTime.now().millisecondsSinceEpoch}_$safeName';
+      final storage =
+          Supabase.instance.client.storage.from('foto-profil');
+
+      await storage.uploadBinary(objectPath, imageBytes);
+      final publicUrl = storage.getPublicUrl(objectPath);
+
+      // 2. Simpan URL ke backend via PATCH /api/profil
+      await apiClient.patchJson(
+        '/api/profil',
+        authenticated: true,
+        body: {'fotoProfil': publicUrl},
+      );
+
+      // 3. Reload profil agar UI langsung update
+      await loadProfile();
+
+      return publicUrl;
     } catch (error) {
       errorMessage = error.toString();
       rethrow;
