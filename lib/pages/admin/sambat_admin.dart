@@ -21,24 +21,16 @@ class _SambatAdminPageState extends State<SambatAdminPage> {
   List<Map<String, dynamic>> _allSambatList = [];
   List<Map<String, dynamic>> _filteredList = [];
 
-  // Filter & Search State
+  // Filter State
   int _selectedFilterIndex = 0;
   final List<String> _filters = ['Semua', 'Menunggu', 'Diproses', 'Selesai', 'Ditolak'];
   int _selectedCategoryIndex = 0;
   final List<String> _categoryFilters = ['Semua Kategori', 'Sosial', 'Infrastruktur', 'Layanan Umum'];
-  String _searchQuery = '';
-  final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     _loadSambat();
-  }
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
   }
 
   Future<void> _loadSambat() async {
@@ -71,9 +63,9 @@ class _SambatAdminPageState extends State<SambatAdminPage> {
   }
 
   void _applyFilters() {
-    // 1. Filter by status chip
     List<Map<String, dynamic>> temp = List.from(_allSambatList);
 
+    // 1. Filter by status chip
     if (_selectedFilterIndex > 0) {
       final filterLabel = _filters[_selectedFilterIndex];
       temp = temp.where((item) {
@@ -82,30 +74,12 @@ class _SambatAdminPageState extends State<SambatAdminPage> {
       }).toList();
     }
 
-    // 1b. Filter by category chip
+    // 2. Filter by category chip
     if (_selectedCategoryIndex > 0) {
       final categoryLabel = _categoryFilters[_selectedCategoryIndex];
       temp = temp.where((item) {
         final itemCategory = (item['kategori'] ?? item['category'] ?? '').toString().trim();
         return itemCategory.toLowerCase() == categoryLabel.toLowerCase();
-      }).toList();
-    }
-
-    // 2. Filter by search query
-    if (_searchQuery.isNotEmpty) {
-      final query = _searchQuery.toLowerCase();
-      temp = temp.where((item) {
-        final title = (item['judul'] ?? item['title'] ?? '').toString().toLowerCase();
-        final desc = (item['deskripsi'] ?? item['description'] ?? '').toString().toLowerCase();
-        final category = (item['kategori'] ?? item['category'] ?? '').toString().toLowerCase();
-        final address = (item['alamatLengkap'] ?? item['address'] ?? '').toString().toLowerCase();
-        final name = (item['namaUser'] ?? item['author_name'] ?? '').toString().toLowerCase();
-
-        return title.contains(query) ||
-            desc.contains(query) ||
-            category.contains(query) ||
-            address.contains(query) ||
-            name.contains(query);
       }).toList();
     }
 
@@ -600,35 +574,7 @@ class _SambatAdminPageState extends State<SambatAdminPage> {
             ),
           ),
 
-          // Search Bar
-          Container(
-            color: Colors.white,
-            padding: const EdgeInsets.only(left: 20, right: 20, bottom: 12),
-            child: Container(
-              decoration: BoxDecoration(
-                color: const Color(0xFFF1F3F5),
-                borderRadius: BorderRadius.circular(30),
-              ),
-              child: TextField(
-                controller: _searchController,
-                onChanged: (val) {
-                  setState(() {
-                    _searchQuery = val;
-                    _applyFilters();
-                  });
-                },
-                decoration: const InputDecoration(
-                  hintText: 'Cari sambat berdasarkan kata kunci...',
-                  hintStyle: TextStyle(color: Colors.grey, fontSize: 13),
-                  prefixIcon: Icon(Icons.search, color: Colors.grey),
-                  border: InputBorder.none,
-                  contentPadding: EdgeInsets.symmetric(vertical: 14),
-                ),
-              ),
-            ),
-          ),
-
-          // 2. Daftar Sambat
+          // 2. Daftar Sambat (Search Bar dihapus, Container bawah langsung menyambung)
           Expanded(
             child: RefreshIndicator(
               onRefresh: _loadSambat,

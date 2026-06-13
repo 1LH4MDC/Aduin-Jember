@@ -17,20 +17,11 @@ class _UsersAdminState extends State<UsersAdmin> {
   String? _errorMessage;
 
   List<Map<String, dynamic>> _allUsersList = [];
-  List<Map<String, dynamic>> _filteredUsersList = [];
-  String _searchQuery = '';
-  final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     _loadUsers();
-  }
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
   }
 
   Future<void> _loadUsers() async {
@@ -89,7 +80,6 @@ class _UsersAdminState extends State<UsersAdmin> {
       if (mounted) {
         setState(() {
           _allUsersList = users;
-          _applySearch();
           _isLoading = false;
         });
       }
@@ -100,19 +90,6 @@ class _UsersAdminState extends State<UsersAdmin> {
           _isLoading = false;
         });
       }
-    }
-  }
-
-  void _applySearch() {
-    if (_searchQuery.isEmpty) {
-      _filteredUsersList = List.from(_allUsersList);
-    } else {
-      final query = _searchQuery.toLowerCase();
-      _filteredUsersList = _allUsersList.where((u) {
-        final name = u['nama'].toString().toLowerCase();
-        final email = u['email'].toString().toLowerCase();
-        return name.contains(query) || email.contains(query);
-      }).toList();
     }
   }
 
@@ -145,125 +122,91 @@ class _UsersAdminState extends State<UsersAdmin> {
     return colors[hash.abs() % colors.length];
   }
 
-  Future<void> _deleteUser(Map<String, dynamic> user) async {
-    final name = user['nama'].toString();
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Hapus Pengguna'),
-        content: Text('Apakah Anda yakin ingin menghapus pengguna "$name" dari daftar?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Batal'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Hapus', style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed == true) {
-      setState(() {
-        _allUsersList.removeWhere((u) => u['email'] == user['email']);
-        _applySearch();
-      });
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Pengguna "$name" berhasil dihapus (simulasi).'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
-    }
-  }
-
-  void _showEditUserDialog(Map<String, dynamic> user) {
-    final nameController = TextEditingController(text: user['nama']?.toString());
-    final emailController = TextEditingController(text: user['email']?.toString());
-    final formKey = GlobalKey<FormState>();
-
+  void _showDetailUserDialog(Map<String, dynamic> user) {
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: const Text(
-            'Detail & Edit Pengguna',
+            'Detail Pengguna',
             style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primaryColor),
           ),
-          content: Form(
-            key: formKey,
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  CircleAvatar(
-                    radius: 30,
-                    backgroundColor: user['color'] is Color ? user['color'] : Color(int.parse(user['color'].toString())),
-                    child: Text(
-                      user['inisial'].toString(),
-                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 20),
-                    ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircleAvatar(
+                  radius: 30,
+                  backgroundColor: user['color'] is Color ? user['color'] : Color(int.parse(user['color'].toString())),
+                  child: Text(
+                    user['inisial'].toString(),
+                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 20),
                   ),
-                  const SizedBox(height: 20),
-                  TextFormField(
-                    controller: nameController,
-                    decoration: const InputDecoration(
-                      labelText: 'Nama Lengkap',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.person),
-                    ),
-                    validator: (val) => val == null || val.trim().isEmpty ? 'Nama tidak boleh kosong' : null,
+                ),
+                const SizedBox(height: 24),
+                // Informasi Nama (Read Only)
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.grey.shade300),
                   ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: emailController,
-                    decoration: const InputDecoration(
-                      labelText: 'Email',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.email),
-                    ),
-                    validator: (val) {
-                      if (val == null || val.trim().isEmpty) return 'Email tidak boleh kosong';
-                      if (!val.contains('@')) return 'Email tidak valid';
-                      return null;
-                    },
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('Nama Lengkap', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          const Icon(Icons.person_outline, size: 16, color: Colors.black87),
+                          const SizedBox(width: 8),
+                          Text(
+                            user['nama'].toString(),
+                            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.black87),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                ),
+                const SizedBox(height: 12),
+                // Informasi Email (Read Only)
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.grey.shade300),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('Email', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          const Icon(Icons.email_outlined, size: 16, color: Colors.black87),
+                          const SizedBox(width: 8),
+                          Text(
+                            user['email'].toString(),
+                            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.black87),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Batal'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                if (formKey.currentState!.validate()) {
-                  setState(() {
-                    user['nama'] = nameController.text.trim();
-                    user['email'] = emailController.text.trim();
-                    user['inisial'] = _getInitials(user['nama'].toString());
-                    user['color'] = _getAvatarColor(user['email'].toString());
-                    _applySearch();
-                  });
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Data pengguna "${user['nama']}" berhasil disimpan.'),
-                      backgroundColor: Colors.green,
-                    ),
-                  );
-                }
-              },
-              child: const Text('Simpan'),
+              child: const Text('Tutup', style: TextStyle(fontWeight: FontWeight.bold)),
             ),
           ],
         );
@@ -292,33 +235,7 @@ class _UsersAdminState extends State<UsersAdmin> {
         padding: const EdgeInsets.all(20.0),
         child: Column(
           children: [
-            // 1. KOMPONEN PENCARIAN
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(30),
-                border: Border.all(color: Colors.grey.withValues(alpha: 0.3)),
-              ),
-              child: TextField(
-                controller: _searchController,
-                onChanged: (val) {
-                  setState(() {
-                    _searchQuery = val;
-                    _applySearch();
-                  });
-                },
-                decoration: const InputDecoration(
-                  hintText: 'Cari pengguna...',
-                  hintStyle: TextStyle(color: Colors.grey, fontSize: 14),
-                  prefixIcon: Icon(Icons.search, color: Colors.grey),
-                  border: InputBorder.none,
-                  contentPadding: EdgeInsets.symmetric(vertical: 14),
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            // 2. HEADER DAFTAR PENGGUNA & BADGE TOTAL
+            // 1. HEADER DAFTAR PENGGUNA & BADGE TOTAL
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -337,7 +254,7 @@ class _UsersAdminState extends State<UsersAdmin> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
-                    '${_filteredUsersList.length} Total',
+                    '${_allUsersList.length} Total',
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 11,
@@ -349,7 +266,7 @@ class _UsersAdminState extends State<UsersAdmin> {
             ),
             const SizedBox(height: 16),
 
-            // 3. DAFTAR KARTU PENGGUNA
+            // 2. DAFTAR KARTU PENGGUNA
             Expanded(
               child: _isLoading
                   ? const Center(child: CircularProgressIndicator(color: AppTheme.primaryColor))
@@ -366,16 +283,16 @@ class _UsersAdminState extends State<UsersAdmin> {
                             ],
                           ),
                         )
-                      : _filteredUsersList.isEmpty
+                      : _allUsersList.isEmpty
                           ? const Center(child: Text('Tidak ada pengguna ditemukan.'))
                           : RefreshIndicator(
                               onRefresh: _loadUsers,
                               color: AppTheme.primaryColor,
                               child: ListView.builder(
                                 physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
-                                itemCount: _filteredUsersList.length,
+                                itemCount: _allUsersList.length,
                                 itemBuilder: (context, index) {
-                                  final user = _filteredUsersList[index];
+                                  final user = _allUsersList[index];
                                   final colorVal = user['color'] is Color ? user['color'] : Color(int.parse(user['color'].toString()));
 
                                   return Container(
@@ -395,7 +312,7 @@ class _UsersAdminState extends State<UsersAdmin> {
                                       color: Colors.transparent,
                                       borderRadius: BorderRadius.circular(14),
                                       child: InkWell(
-                                        onTap: () => _showEditUserDialog(user),
+                                        onTap: () => _showDetailUserDialog(user),
                                         borderRadius: BorderRadius.circular(14),
                                         child: Padding(
                                           padding: const EdgeInsets.all(14),
@@ -439,24 +356,8 @@ class _UsersAdminState extends State<UsersAdmin> {
                                                   ],
                                                 ),
                                               ),
-                                              // Tombol Edit
-                                              IconButton(
-                                                icon: const Icon(
-                                                  Icons.edit_outlined,
-                                                  color: AppTheme.primaryColor,
-                                                  size: 20,
-                                                ),
-                                                onPressed: () => _showEditUserDialog(user),
-                                              ),
-                                              // Tombol Aksi Hapus
-                                              IconButton(
-                                                icon: const Icon(
-                                                  Icons.delete_outline_rounded,
-                                                  color: Color(0xFFC62828),
-                                                  size: 20,
-                                                ),
-                                                onPressed: () => _deleteUser(user),
-                                              ),
+                                              // Ikon Panah Kanan sebagai indikasi bisa di-klik untuk melihat detail
+                                              const Icon(Icons.chevron_right, color: Colors.grey),
                                             ],
                                           ),
                                         ),

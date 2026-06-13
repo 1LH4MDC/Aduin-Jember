@@ -15,10 +15,7 @@ class WoroWoroAdmin extends StatefulWidget {
 class _WoroWoroAdminState extends State<WoroWoroAdmin> {
   late WoroService _woroService;
   List<Map<String, dynamic>> _woroList = [];
-  List<Map<String, dynamic>> _filteredList = [];
   bool _isLoading = true;
-  String _searchQuery = '';
-  final _searchController = TextEditingController();
   bool _woroLoaded = false;
 
   @override
@@ -32,12 +29,6 @@ class _WoroWoroAdminState extends State<WoroWoroAdmin> {
     }
   }
 
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
-
   Future<void> _loadWoro() async {
     setState(() {
       _isLoading = true;
@@ -45,10 +36,11 @@ class _WoroWoroAdminState extends State<WoroWoroAdmin> {
 
     try {
       final list = await _woroService.fetchWoro();
-      setState(() {
-        _woroList = list;
-        _filterWoro();
-      });
+      if (mounted) {
+        setState(() {
+          _woroList = list;
+        });
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -61,20 +53,6 @@ class _WoroWoroAdminState extends State<WoroWoroAdmin> {
           _isLoading = false;
         });
       }
-    }
-  }
-
-  void _filterWoro() {
-    if (_searchQuery.isEmpty) {
-      _filteredList = List.from(_woroList);
-    } else {
-      _filteredList = _woroList.where((item) {
-        final title = (item['judul'] ?? '').toString().toLowerCase();
-        final content = (item['konten'] ?? '').toString().toLowerCase();
-        final category = (item['kategori'] ?? '').toString().toLowerCase();
-        final query = _searchQuery.toLowerCase();
-        return title.contains(query) || content.contains(query) || category.contains(query);
-      }).toList();
     }
   }
 
@@ -141,43 +119,21 @@ class _WoroWoroAdminState extends State<WoroWoroAdmin> {
           padding: const EdgeInsets.all(20.0),
           child: Column(
             children: [
-              // 1. Search Bar
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(30),
-                  border: Border.all(color: Colors.grey.withValues(alpha: 0.3)),
-                ),
-                child: TextField(
-                  controller: _searchController,
-                  onChanged: (val) {
-                    setState(() {
-                      _searchQuery = val;
-                      _filterWoro();
-                    });
-                  },
-                  decoration: const InputDecoration(
-                    hintText: 'Cari Pengumuman...',
-                    hintStyle: TextStyle(color: Colors.grey, fontSize: 14),
-                    prefixIcon: Icon(Icons.search, color: Colors.grey),
-                    border: InputBorder.none,
-                    contentPadding: EdgeInsets.symmetric(vertical: 14),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
+              // 1. REKOMENDASI PENGGANTI SEARCH BAR: Summary Banner
+              _buildSummaryBanner(),
+              const SizedBox(height: 24),
 
               // 2. List Woro-Woro
               Expanded(
                 child: _isLoading
                     ? const Center(child: CircularProgressIndicator(color: AppTheme.primaryColor))
-                    : _filteredList.isEmpty
-                        ? const Center(child: Text('Tidak ada pengumuman ditemukan.'))
+                    : _woroList.isEmpty
+                        ? const Center(child: Text('Tidak ada pengumuman saat ini.'))
                         : ListView.builder(
                             physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
-                            itemCount: _filteredList.length,
+                            itemCount: _woroList.length,
                             itemBuilder: (context, index) {
-                              final item = _filteredList[index];
+                              final item = _woroList[index];
                               final idWoro = item['idWoro']?.toString() ?? '';
                               final title = item['judul']?.toString() ?? '';
                               final createdAtStr = item['createdAt']?.toString() ?? '';
@@ -218,7 +174,63 @@ class _WoroWoroAdminState extends State<WoroWoroAdmin> {
     );
   }
 
-  // Widget Bantuan untuk Baris List Woro-Woro
+  // --- WIDGET BARU: Banner Rekapitulasi ---
+  Widget _buildSummaryBanner() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppTheme.primaryColor,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.primaryColor.withValues(alpha: 0.3),
+            blurRadius: 10,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.2),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.campaign_rounded, color: Colors.white, size: 32),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Total Pengumuman',
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '${_woroList.length} Woro-Woro Aktif',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // --- Widget Bantuan untuk Baris List Woro-Woro ---
   Widget _buildWoroItem({
     required String idWoro,
     required String title,

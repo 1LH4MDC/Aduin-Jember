@@ -6,6 +6,8 @@ import '../../services/auth_service.dart';
 import '../../services/gawat_service.dart';
 import '../../services/sambat_service.dart';
 import '../../services/woro_service.dart';
+import '../auth/login_page.dart'; // Import untuk fungsi logout
+import 'profile_admin_page.dart'; // Import untuk halaman profil admin
 import 'users_admin.dart';
 
 class DashboardAdmin extends StatefulWidget {
@@ -125,6 +127,8 @@ class _DashboardAdminState extends State<DashboardAdmin> {
   Widget build(BuildContext context) {
     // Get latest 3 sambats
     final recentSambats = _sambatList.take(3).toList();
+    // Inisialisasi auth untuk kebutuhan fitur logout
+    final auth = Provider.of<AuthController>(context, listen: false); 
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
@@ -132,6 +136,20 @@ class _DashboardAdminState extends State<DashboardAdmin> {
         backgroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
+        // PERBAIKAN 1: Ikon Profil di kiri atas
+        leading: IconButton(
+          icon: const Icon(
+            Icons.account_circle_outlined,
+            color: AppTheme.primaryColor,
+            size: 28,
+          ),
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const ProfileAdminPage()),
+            ).then((_) => _loadData());
+          },
+        ),
         title: const Text(
           'Aduin Jember Admin',
           style: TextStyle(
@@ -140,6 +158,50 @@ class _DashboardAdminState extends State<DashboardAdmin> {
             fontSize: 20,
           ),
         ),
+        // PERBAIKAN 2: Ikon Logout di kanan atas
+        actions: [
+          IconButton(
+            icon: const Icon(
+              Icons.logout_rounded,
+              color: Color(0xFFC62828),
+              size: 24,
+            ),
+            onPressed: auth.isBusy
+                ? null
+                : () async {
+                    final confirmLogout = await showDialog<bool>(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        title: const Text('Keluar Aplikasi'),
+                        content: const Text('Apakah Anda yakin ingin keluar dari sesi admin?'),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context, false),
+                            child: const Text('Batal'),
+                          ),
+                          ElevatedButton(
+                            onPressed: () => Navigator.pop(context, true),
+                            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFC62828)),
+                            child: const Text('Keluar', style: TextStyle(color: Colors.white)),
+                          ),
+                        ],
+                      ),
+                    );
+
+                    if (confirmLogout == true) {
+                      await auth.signOut();
+                      if (context.mounted) {
+                        Navigator.pushAndRemoveUntil(
+                          context,
+                          MaterialPageRoute(builder: (context) => const LoginPage()),
+                          (route) => false,
+                        );
+                      }
+                    }
+                  },
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
       body: RefreshIndicator(
         onRefresh: _loadData,
@@ -354,7 +416,6 @@ class _DashboardAdminState extends State<DashboardAdmin> {
           borderRadius: BorderRadius.circular(16),
           child: Stack(
             children: [
-              // Aksen Lingkaran Background Angka di Pojok Kanan Atas
               Positioned(
                 top: -10,
                 right: -10,
@@ -367,7 +428,6 @@ class _DashboardAdminState extends State<DashboardAdmin> {
                   ),
                 ),
               ),
-              // Angka Statistik di Pojok Kanan Atas
               Positioned(
                 top: 12,
                 right: 16,
@@ -382,7 +442,6 @@ class _DashboardAdminState extends State<DashboardAdmin> {
                   ),
                 ),
               ),
-              // Konten Utama Ikon & Teks Label
               Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Column(
@@ -439,7 +498,6 @@ class _DashboardAdminState extends State<DashboardAdmin> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            // Bagian Kiri: Judul & Tanggal Sambat
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -473,7 +531,6 @@ class _DashboardAdminState extends State<DashboardAdmin> {
               ),
             ),
             const SizedBox(width: 12),
-            // Bagian Kanan: Kapsul Status
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
@@ -496,7 +553,6 @@ class _DashboardAdminState extends State<DashboardAdmin> {
   }
 
   Widget _buildRecapChartCard() {
-    // 1. Calculate category counts
     int countSosial = 0;
     int countInfrastruktur = 0;
     int countLayananUmum = 0;
@@ -516,7 +572,6 @@ class _DashboardAdminState extends State<DashboardAdmin> {
     }
     final int totalCategory = countSosial + countInfrastruktur + countLayananUmum + countLainnya;
 
-    // 2. Calculate status counts
     int countMenunggu = 0;
     int countDiproses = 0;
     int countSelesai = 0;
@@ -555,29 +610,32 @@ class _DashboardAdminState extends State<DashboardAdmin> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header
+          // PERBAIKAN 3: Wrap header text with Expanded to avoid overflow
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Rekapitulasi Sambat',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: AppTheme.textPrimary,
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Rekapitulasi Sambat',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.textPrimary,
+                      ),
                     ),
-                  ),
-                  SizedBox(height: 4),
-                  Text(
-                    'Statistik aduan masuk',
-                    style: TextStyle(fontSize: 12, color: Colors.grey),
-                  ),
-                ],
+                    SizedBox(height: 4),
+                    Text(
+                      'Statistik aduan masuk',
+                      style: TextStyle(fontSize: 12, color: Colors.grey),
+                    ),
+                  ],
+                ),
               ),
-              // Segmented Toggle
+              const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.all(2),
                 decoration: BoxDecoration(
@@ -603,7 +661,6 @@ class _DashboardAdminState extends State<DashboardAdmin> {
           ),
           const SizedBox(height: 24),
 
-          // Chart Render
           if (total == 0)
             const SizedBox(
               height: 120,
@@ -679,12 +736,10 @@ class _DashboardAdminState extends State<DashboardAdmin> {
   }
 
   Widget _buildSambatDateBarChart() {
-    // Group by DateTime (Year, Month, Day)
     final Map<DateTime, int> dateCounts = {};
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     
-    // Prepopulate last 5 days with 0
     for (int i = 4; i >= 0; i--) {
       final d = today.subtract(Duration(days: i));
       dateCounts[d] = 0;
@@ -703,11 +758,9 @@ class _DashboardAdminState extends State<DashboardAdmin> {
       }
     }
 
-    // Sort by DateTime key ascending
     final sortedEntries = dateCounts.entries.toList()
       ..sort((a, b) => a.key.compareTo(b.key));
 
-    // Limit to last 5 entries to keep it clean on mobile
     final displayEntries = sortedEntries.length > 5
         ? sortedEntries.sublist(sortedEntries.length - 5)
         : sortedEntries;
@@ -764,7 +817,6 @@ class _DashboardAdminState extends State<DashboardAdmin> {
               height: 140,
               child: Stack(
                 children: [
-                  // Dashed Grid Lines in the background
                   Positioned(
                     top: 25,
                     bottom: 25,
@@ -838,7 +890,6 @@ class _DashboardAdminState extends State<DashboardAdmin> {
   }
 
   Widget _buildGawatRecapChartCard() {
-    // 1. Calculate emergency type counts
     int countKecelakaan = 0;
     int countKriminal = 0;
     int countBencana = 0;
@@ -858,7 +909,6 @@ class _DashboardAdminState extends State<DashboardAdmin> {
     }
     final int totalType = countKecelakaan + countKriminal + countBencana + countLainnya;
 
-    // 2. Calculate status counts
     int countAktif = 0;
     int countDiproses = 0;
     int countSelesai = 0;
@@ -894,29 +944,32 @@ class _DashboardAdminState extends State<DashboardAdmin> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header
+          // PERBAIKAN 3: Wrap header text with Expanded to avoid overflow
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Rekapitulasi Gawat',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFFB71C1C),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Rekapitulasi Gawat',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFFB71C1C),
+                      ),
                     ),
-                  ),
-                  SizedBox(height: 4),
-                  Text(
-                    'Statistik laporan darurat masuk',
-                    style: TextStyle(fontSize: 12, color: Colors.grey),
-                  ),
-                ],
+                    SizedBox(height: 4),
+                    Text(
+                      'Statistik laporan darurat masuk',
+                      style: TextStyle(fontSize: 12, color: Colors.grey),
+                    ),
+                  ],
+                ),
               ),
-              // Segmented Toggle
+              const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.all(2),
                 decoration: BoxDecoration(
@@ -942,7 +995,6 @@ class _DashboardAdminState extends State<DashboardAdmin> {
           ),
           const SizedBox(height: 24),
 
-          // Chart Render
           if (total == 0)
             const SizedBox(
               height: 120,
@@ -1011,12 +1063,10 @@ class _DashboardAdminState extends State<DashboardAdmin> {
   }
 
   Widget _buildGawatDateBarChart() {
-    // Group by DateTime (Year, Month, Day)
     final Map<DateTime, int> dateCounts = {};
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     
-    // Prepopulate last 5 days with 0
     for (int i = 4; i >= 0; i--) {
       final d = today.subtract(Duration(days: i));
       dateCounts[d] = 0;
@@ -1035,11 +1085,9 @@ class _DashboardAdminState extends State<DashboardAdmin> {
       }
     }
 
-    // Sort by DateTime key ascending
     final sortedEntries = dateCounts.entries.toList()
       ..sort((a, b) => a.key.compareTo(b.key));
 
-    // Limit to last 5 entries to keep it clean on mobile
     final displayEntries = sortedEntries.length > 5
         ? sortedEntries.sublist(sortedEntries.length - 5)
         : sortedEntries;
@@ -1096,7 +1144,6 @@ class _DashboardAdminState extends State<DashboardAdmin> {
               height: 140,
               child: Stack(
                 children: [
-                  // Dashed Grid Lines in the background
                   Positioned(
                     top: 25,
                     bottom: 25,
