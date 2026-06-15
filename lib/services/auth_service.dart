@@ -80,7 +80,11 @@ class AuthController extends ChangeNotifier {
 
   Future<void> loadProfile() async {
     final response = await apiClient.getJson('/api/profil');
-    profile = _extractDataMap(response);
+    // Gunakan _readProfile() agar field role/is_admin/isAdmin dari response
+    // parent juga di-merge ke dalam profile, konsisten dengan behavior signIn()
+    // _extractDataMap() hanya mengambil response['data'] tanpa field admin
+    final data = _extractDataMap(response);
+    profile = _readProfile(data) ?? data;
   }
 
   Future<void> updateProfile({
@@ -134,8 +138,7 @@ class AuthController extends ChangeNotifier {
           : imageName.trim().replaceAll(RegExp(r'[^A-Za-z0-9._-]'), '_');
       final objectPath =
           'profil/${DateTime.now().millisecondsSinceEpoch}_$safeName';
-      final storage =
-          Supabase.instance.client.storage.from('foto-profil');
+      final storage = Supabase.instance.client.storage.from('foto-profil');
 
       await storage.uploadBinary(objectPath, imageBytes);
       final publicUrl = storage.getPublicUrl(objectPath);

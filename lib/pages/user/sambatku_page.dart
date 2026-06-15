@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import '../../core/theme.dart';
 import '../../services/auth_service.dart';
 import '../../services/sambat_service.dart';
-import '../sambat/create_sambat_page.dart';
+import 'create_sambat_page.dart';
 
 class SambatkuPage extends StatefulWidget {
   const SambatkuPage({super.key});

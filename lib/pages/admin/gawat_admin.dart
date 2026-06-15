@@ -26,7 +26,12 @@ class _GawatAdminPageState extends State<GawatAdminPage> {
   final List<String> _filters = ['Semua', 'Kecelakaan', 'Kriminal', 'Bencana'];
 
   int _selectedStatusIndex = 0;
-  final List<String> _statusFilters = ['Semua', 'Mencari Bantuan', 'Ditangani', 'Selesai'];
+  final List<String> _statusFilters = [
+    'Semua',
+    'Mencari Bantuan',
+    'Ditangani',
+    'Selesai',
+  ];
 
   String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
@@ -110,8 +115,12 @@ class _GawatAdminPageState extends State<GawatAdminPage> {
 
     // Urutkan berdasarkan tanggal terbaru jika ada
     temp.sort((a, b) {
-      final dateA = DateTime.tryParse(a['createdAt']?.toString() ?? '') ?? DateTime.fromMillisecondsSinceEpoch(0);
-      final dateB = DateTime.tryParse(b['createdAt']?.toString() ?? '') ?? DateTime.fromMillisecondsSinceEpoch(0);
+      final dateA =
+          DateTime.tryParse(a['createdAt']?.toString() ?? '') ??
+          DateTime.fromMillisecondsSinceEpoch(0);
+      final dateB =
+          DateTime.tryParse(b['createdAt']?.toString() ?? '') ??
+          DateTime.fromMillisecondsSinceEpoch(0);
       return dateB.compareTo(dateA); // Descending
     });
 
@@ -230,7 +239,9 @@ class _GawatAdminPageState extends State<GawatAdminPage> {
                               setModalState(() => isSaving = true);
                               try {
                                 final auth = context.read<AuthController>();
-                                final gawatService = GawatService(apiClient: auth.apiClient);
+                                final gawatService = GawatService(
+                                  apiClient: auth.apiClient,
+                                );
 
                                 await gawatService.updateStatus(
                                   gawatId: gawatId,
@@ -241,7 +252,9 @@ class _GawatAdminPageState extends State<GawatAdminPage> {
                                   Navigator.pop(context);
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     const SnackBar(
-                                      content: Text('Status laporan gawat berhasil diperbarui.'),
+                                      content: Text(
+                                        'Status laporan gawat berhasil diperbarui.',
+                                      ),
                                       backgroundColor: Colors.green,
                                     ),
                                   );
@@ -251,22 +264,36 @@ class _GawatAdminPageState extends State<GawatAdminPage> {
                                 setModalState(() => isSaving = false);
                                 if (context.mounted) {
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(content: Text('Gagal: $e'), backgroundColor: Colors.red),
+                                    SnackBar(
+                                      content: Text('Gagal: $e'),
+                                      backgroundColor: Colors.red,
+                                    ),
                                   );
                                 }
                               }
                             },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFFB71C1C),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
                       child: isSaving
                           ? const SizedBox(
                               width: 20,
                               height: 20,
-                              child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
                             )
-                          : const Text('Simpan Perubahan', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                          : const Text(
+                              'Simpan Perubahan',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                     ),
                   ),
                 ],
@@ -287,14 +314,17 @@ class _GawatAdminPageState extends State<GawatAdminPage> {
     final status = _normalizeStatus(statusRaw);
     final createdAtStr = (gawat['createdAt'] ?? '').toString();
     final catatan = (gawat['catatan'] ?? '').toString();
-    
+
     String dateStr = '-';
     if (createdAtStr.isNotEmpty) {
       try {
         final parsed = DateTime.parse(createdAtStr).toLocal();
-        dateStr = "${parsed.day.toString().padLeft(2, '0')}-${parsed.month.toString().padLeft(2, '0')}-${parsed.year} ${parsed.hour.toString().padLeft(2, '0')}:${parsed.minute.toString().padLeft(2, '0')}";
+        dateStr =
+            "${parsed.day.toString().padLeft(2, '0')}-${parsed.month.toString().padLeft(2, '0')}-${parsed.year} ${parsed.hour.toString().padLeft(2, '0')}:${parsed.minute.toString().padLeft(2, '0')}";
       } catch (_) {
-        dateStr = createdAtStr.length >= 10 ? createdAtStr.substring(0, 10) : createdAtStr;
+        dateStr = createdAtStr.length >= 10
+            ? createdAtStr.substring(0, 10)
+            : createdAtStr;
       }
     }
 
@@ -323,7 +353,9 @@ class _GawatAdminPageState extends State<GawatAdminPage> {
       context: context,
       builder: (context) {
         return Dialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 500),
             child: SingleChildScrollView(
@@ -333,14 +365,23 @@ class _GawatAdminPageState extends State<GawatAdminPage> {
                 children: [
                   // Header
                   Container(
-                    padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 24,
+                      horizontal: 20,
+                    ),
                     decoration: const BoxDecoration(
                       color: Color(0xFFB71C1C), // Merah Pekat
-                      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                      borderRadius: BorderRadius.vertical(
+                        top: Radius.circular(20),
+                      ),
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.emergency_share, color: Colors.white, size: 28),
+                        const Icon(
+                          Icons.emergency_share,
+                          color: Colors.white,
+                          size: 28,
+                        ),
                         const SizedBox(width: 12),
                         Expanded(
                           child: Column(
@@ -381,10 +422,17 @@ class _GawatAdminPageState extends State<GawatAdminPage> {
                           children: [
                             const Text(
                               'Status Laporan:',
-                              style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey, fontSize: 12),
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.grey,
+                                fontSize: 12,
+                              ),
                             ),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 6,
+                              ),
                               decoration: BoxDecoration(
                                 color: statusBgColor,
                                 borderRadius: BorderRadius.circular(20),
@@ -405,7 +453,11 @@ class _GawatAdminPageState extends State<GawatAdminPage> {
                         // Reporter Info
                         const Text(
                           'Identitas Pelapor',
-                          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey, fontSize: 12),
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.grey,
+                            fontSize: 12,
+                          ),
                         ),
                         const SizedBox(height: 10),
                         Row(
@@ -413,7 +465,10 @@ class _GawatAdminPageState extends State<GawatAdminPage> {
                             CircleAvatar(
                               radius: 20,
                               backgroundColor: Colors.red.shade50,
-                              child: const Icon(Icons.person, color: Color(0xFFB71C1C)),
+                              child: const Icon(
+                                Icons.person,
+                                color: Color(0xFFB71C1C),
+                              ),
                             ),
                             const SizedBox(width: 12),
                             Expanded(
@@ -431,7 +486,10 @@ class _GawatAdminPageState extends State<GawatAdminPage> {
                                   const SizedBox(height: 2),
                                   Text(
                                     email,
-                                    style: const TextStyle(color: Colors.grey, fontSize: 13),
+                                    style: const TextStyle(
+                                      color: Colors.grey,
+                                      fontSize: 13,
+                                    ),
                                   ),
                                 ],
                               ),
@@ -444,7 +502,11 @@ class _GawatAdminPageState extends State<GawatAdminPage> {
                         if (catatan.isNotEmpty) ...[
                           const Text(
                             'Catatan Tindak Lanjut',
-                            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey, fontSize: 12),
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.grey,
+                              fontSize: 12,
+                            ),
                           ),
                           const SizedBox(height: 6),
                           Container(
@@ -457,7 +519,10 @@ class _GawatAdminPageState extends State<GawatAdminPage> {
                             ),
                             child: Text(
                               catatan,
-                              style: TextStyle(fontSize: 13, color: Colors.amber.shade900),
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: Colors.amber.shade900,
+                              ),
                             ),
                           ),
                           const Divider(height: 24),
@@ -466,20 +531,29 @@ class _GawatAdminPageState extends State<GawatAdminPage> {
                         // Coordinates
                         const Text(
                           'Koordinat Lokasi',
-                          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey, fontSize: 12),
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.grey,
+                            fontSize: 12,
+                          ),
                         ),
                         const SizedBox(height: 6),
                         Row(
                           children: [
-                            const Icon(Icons.location_on_outlined, size: 18, color: Colors.grey),
+                            const Icon(
+                              Icons.location_on_outlined,
+                              size: 18,
+                              color: Colors.grey,
+                            ),
                             const SizedBox(width: 8),
                             Text(
                               '$lat, $lng',
                               style: const TextStyle(
-                                  fontSize: 14,
-                                  fontFamily: 'monospace',
-                                  fontWeight: FontWeight.bold,
-                                  color: AppTheme.textPrimary),
+                                fontSize: 14,
+                                fontFamily: 'monospace',
+                                fontWeight: FontWeight.bold,
+                                color: AppTheme.textPrimary,
+                              ),
                             ),
                           ],
                         ),
@@ -501,7 +575,8 @@ class _GawatAdminPageState extends State<GawatAdminPage> {
                               ),
                               children: [
                                 TileLayer(
-                                  urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                                  urlTemplate:
+                                      'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                                   userAgentPackageName: 'aduin_jember',
                                 ),
                                 MarkerLayer(
@@ -533,8 +608,12 @@ class _GawatAdminPageState extends State<GawatAdminPage> {
                                 child: OutlinedButton(
                                   onPressed: () => Navigator.pop(context),
                                   style: OutlinedButton.styleFrom(
-                                    side: const BorderSide(color: Color(0xFFB71C1C)),
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                    side: const BorderSide(
+                                      color: Color(0xFFB71C1C),
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
                                   ),
                                   child: const Text(
                                     'TUTUP',
@@ -557,7 +636,9 @@ class _GawatAdminPageState extends State<GawatAdminPage> {
                                   },
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: const Color(0xFFB71C1C),
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
                                   ),
                                   child: const Text(
                                     'UBAH STATUS',
@@ -654,7 +735,8 @@ class _GawatAdminPageState extends State<GawatAdminPage> {
                   });
                 },
                 decoration: const InputDecoration(
-                  hintText: 'Cari laporan darurat berdasarkan nama atau jenis...',
+                  hintText:
+                      'Cari laporan darurat berdasarkan nama atau jenis...',
                   hintStyle: TextStyle(color: Colors.grey, fontSize: 13),
                   prefixIcon: Icon(Icons.search, color: Colors.grey),
                   border: InputBorder.none,
@@ -670,70 +752,103 @@ class _GawatAdminPageState extends State<GawatAdminPage> {
               onRefresh: _loadGawat,
               color: const Color(0xFFB71C1C),
               child: _isLoading
-                  ? const Center(child: CircularProgressIndicator(color: Color(0xFFB71C1C)))
+                  ? const Center(
+                      child: CircularProgressIndicator(
+                        color: Color(0xFFB71C1C),
+                      ),
+                    )
                   : _errorMessage != null
-                      ? ListView(
-                          physics: const AlwaysScrollableScrollPhysics(),
-                          children: [
-                            const SizedBox(height: 120),
-                            Center(
-                              child: Column(
-                                children: [
-                                  const Icon(Icons.error_outline, color: Colors.red, size: 48),
-                                  const SizedBox(height: 12),
-                                  Text('Gagal memuat data: $_errorMessage', style: const TextStyle(color: Colors.red)),
-                                  const SizedBox(height: 12),
-                                  ElevatedButton(
-                                    onPressed: _loadGawat,
-                                    style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFB71C1C)),
-                                    child: const Text('Coba Lagi', style: TextStyle(color: Colors.white)),
-                                  ),
-                                ],
+                  ? ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      children: [
+                        const SizedBox(height: 120),
+                        Center(
+                          child: Column(
+                            children: [
+                              const Icon(
+                                Icons.error_outline,
+                                color: Colors.red,
+                                size: 48,
                               ),
-                            ),
-                          ],
-                        )
-                      : _filteredList.isEmpty
-                          ? ListView(
-                              physics: const AlwaysScrollableScrollPhysics(),
-                              children: const [
-                                SizedBox(height: 120),
-                                Center(child: Text('Tidak ada laporan darurat ditemukan.')),
-                              ],
-                            )
-                          : ListView.builder(
-                              padding: const EdgeInsets.all(20),
-                              physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
-                              itemCount: _filteredList.length,
-                              itemBuilder: (context, index) {
-                                final item = _filteredList[index];
-                                final type = (item['jenisDarurat'] ?? 'Umum').toString().toUpperCase();
-                                final name = (item['namaUser'] ?? 'Pengguna').toString();
-                                final email = (item['emailUser'] ?? 'tidak ada email').toString();
-                                final statusRaw = (item['status'] ?? 'Aktif').toString();
-                                final status = _normalizeStatus(statusRaw).toUpperCase();
-                                final createdAtStr = (item['createdAt'] ?? '').toString();
-                                
-                                String dateStr = '-';
-                                if (createdAtStr.isNotEmpty) {
-                                  try {
-                                    final parsed = DateTime.parse(createdAtStr).toLocal();
-                                    dateStr = "${parsed.day.toString().padLeft(2, '0')}-${parsed.month.toString().padLeft(2, '0')}-${parsed.year} ${parsed.hour.toString().padLeft(2, '0')}:${parsed.minute.toString().padLeft(2, '0')}";
-                                  } catch (_) {
-                                    dateStr = createdAtStr.length >= 10 ? createdAtStr.substring(0, 10) : createdAtStr;
-                                  }
-                                }
+                              const SizedBox(height: 12),
+                              Text(
+                                'Gagal memuat data: $_errorMessage',
+                                style: const TextStyle(color: Colors.red),
+                              ),
+                              const SizedBox(height: 12),
+                              ElevatedButton(
+                                onPressed: _loadGawat,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFFB71C1C),
+                                ),
+                                child: const Text(
+                                  'Coba Lagi',
+                                  style: TextStyle(color: Colors.white),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    )
+                  : _filteredList.isEmpty
+                  ? ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      children: const [
+                        SizedBox(height: 120),
+                        Center(
+                          child: Text('Tidak ada laporan darurat ditemukan.'),
+                        ),
+                      ],
+                    )
+                  : ListView.builder(
+                      padding: const EdgeInsets.all(20),
+                      physics: const AlwaysScrollableScrollPhysics(
+                        parent: BouncingScrollPhysics(),
+                      ),
+                      itemCount: _filteredList.length,
+                      itemBuilder: (context, index) {
+                        final item = _filteredList[index];
+                        final type = (item['jenisDarurat'] ?? 'Umum')
+                            .toString()
+                            .toUpperCase();
+                        final name = (item['namaUser'] ?? 'Pengguna')
+                            .toString();
+                        final email = (item['emailUser'] ?? 'tidak ada email')
+                            .toString();
+                        final statusRaw = (item['status'] ?? 'Aktif')
+                            .toString();
+                        final status = _normalizeStatus(
+                          statusRaw,
+                        ).toUpperCase();
+                        final createdAtStr = (item['createdAt'] ?? '')
+                            .toString();
 
-                                return _buildGawatCard(
-                                  gawat: item,
-                                  jenisDarurat: type,
-                                  nama: name,
-                                  email: email,
-                                  waktu: dateStr,
-                                  status: status,
-                                );
-                              },
-                            ),
+                        String dateStr = '-';
+                        if (createdAtStr.isNotEmpty) {
+                          try {
+                            final parsed = DateTime.parse(
+                              createdAtStr,
+                            ).toLocal();
+                            dateStr =
+                                "${parsed.day.toString().padLeft(2, '0')}-${parsed.month.toString().padLeft(2, '0')}-${parsed.year} ${parsed.hour.toString().padLeft(2, '0')}:${parsed.minute.toString().padLeft(2, '0')}";
+                          } catch (_) {
+                            dateStr = createdAtStr.length >= 10
+                                ? createdAtStr.substring(0, 10)
+                                : createdAtStr;
+                          }
+                        }
+
+                        return _buildGawatCard(
+                          gawat: item,
+                          jenisDarurat: type,
+                          nama: name,
+                          email: email,
+                          waktu: dateStr,
+                          status: status,
+                        );
+                      },
+                    ),
             ),
           ),
         ],
@@ -830,7 +945,7 @@ class _GawatAdminPageState extends State<GawatAdminPage> {
   }) {
     Color statusColor;
     Color statusBgColor;
-    
+
     final normalizedStatus = _normalizeStatus(status);
     if (normalizedStatus == 'Ditangani') {
       statusColor = Colors.blue;
@@ -848,7 +963,10 @@ class _GawatAdminPageState extends State<GawatAdminPage> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.red.withValues(alpha: 0.15), width: 1.5),
+        border: Border.all(
+          color: Colors.red.withValues(alpha: 0.15),
+          width: 1.5,
+        ),
         boxShadow: [
           BoxShadow(
             color: Colors.red.withValues(alpha: 0.03),
@@ -896,7 +1014,10 @@ class _GawatAdminPageState extends State<GawatAdminPage> {
                     ],
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: statusBgColor,
                       borderRadius: BorderRadius.circular(12),
@@ -920,7 +1041,11 @@ class _GawatAdminPageState extends State<GawatAdminPage> {
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.person_outline, size: 16, color: Colors.grey),
+                      const Icon(
+                        Icons.person_outline,
+                        size: 16,
+                        color: Colors.grey,
+                      ),
                       const SizedBox(width: 8),
                       Text(
                         nama,
@@ -935,7 +1060,11 @@ class _GawatAdminPageState extends State<GawatAdminPage> {
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      const Icon(Icons.mail_outline, size: 16, color: Colors.grey),
+                      const Icon(
+                        Icons.mail_outline,
+                        size: 16,
+                        color: Colors.grey,
+                      ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
@@ -959,7 +1088,11 @@ class _GawatAdminPageState extends State<GawatAdminPage> {
                   Expanded(
                     child: Text(
                       waktu,
-                      style: const TextStyle(fontSize: 12, color: Colors.grey, height: 1.3),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey,
+                        height: 1.3,
+                      ),
                     ),
                   ),
                   Row(
@@ -971,9 +1104,16 @@ class _GawatAdminPageState extends State<GawatAdminPage> {
                             Text(
                               'Ubah\nStatus',
                               textAlign: TextAlign.right,
-                              style: TextStyle(color: Color(0xFFB71C1C), fontSize: 12),
+                              style: TextStyle(
+                                color: Color(0xFFB71C1C),
+                                fontSize: 12,
+                              ),
                             ),
-                            Icon(Icons.keyboard_arrow_down, color: Color(0xFFB71C1C), size: 16),
+                            Icon(
+                              Icons.keyboard_arrow_down,
+                              color: Color(0xFFB71C1C),
+                              size: 16,
+                            ),
                           ],
                         ),
                       ),
@@ -991,7 +1131,11 @@ class _GawatAdminPageState extends State<GawatAdminPage> {
                                 fontSize: 12,
                               ),
                             ),
-                            Icon(Icons.chevron_right, color: Color(0xFFB71C1C), size: 16),
+                            Icon(
+                              Icons.chevron_right,
+                              color: Color(0xFFB71C1C),
+                              size: 16,
+                            ),
                           ],
                         ),
                       ),
