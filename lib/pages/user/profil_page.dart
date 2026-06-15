@@ -1,9 +1,9 @@
+import 'package:aduin_jember/pages/auth/auth_gate.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme.dart';
 import '../../services/auth_service.dart';
-import '../auth/login_page.dart';
 import 'edit_profil_page.dart';
 
 class ProfilPage extends StatefulWidget {
@@ -256,7 +256,7 @@ class _ProfilPageState extends State<ProfilPage> {
                         Navigator.pushAndRemoveUntil(
                           context,
                           MaterialPageRoute(
-                              builder: (context) => const LoginPage()),
+                              builder: (context) => const AuthGate()),
                           (route) => false,
                         );
                       }

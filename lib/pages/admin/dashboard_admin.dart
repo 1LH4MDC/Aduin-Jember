@@ -1,3 +1,4 @@
+import 'package:aduin_jember/pages/auth/auth_gate.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -6,8 +7,7 @@ import '../../services/auth_service.dart';
 import '../../services/gawat_service.dart';
 import '../../services/sambat_service.dart';
 import '../../services/woro_service.dart';
-import '../auth/login_page.dart'; // Import untuk fungsi logout
-// Import untuk halaman profil admin
+
 import 'users_admin.dart';
 
 class DashboardAdmin extends StatefulWidget {
@@ -179,7 +179,7 @@ class _DashboardAdminState extends State<DashboardAdmin> {
                       if (context.mounted) {
                         Navigator.pushAndRemoveUntil(
                           context,
-                          MaterialPageRoute(builder: (context) => const LoginPage()),
+                          MaterialPageRoute(builder: (context) => const AuthGate()),
                           (route) => false,
                         );
                       }
@@ -793,14 +793,14 @@ class _DashboardAdminState extends State<DashboardAdmin> {
           const SizedBox(height: 24),
           if (displayEntries.isEmpty)
             const SizedBox(
-              height: 140,
+              height: 150,
               child: Center(
                 child: Text('Belum ada data tren harian', style: TextStyle(color: Colors.grey, fontSize: 13)),
               ),
             )
           else
             SizedBox(
-              height: 140,
+              height: 150,
               child: Stack(
                 children: [
                   Positioned(
@@ -1120,14 +1120,14 @@ class _DashboardAdminState extends State<DashboardAdmin> {
           const SizedBox(height: 24),
           if (displayEntries.isEmpty)
             const SizedBox(
-              height: 140,
+              height: 150,
               child: Center(
                 child: Text('Belum ada data tren harian', style: TextStyle(color: Colors.grey, fontSize: 13)),
               ),
             )
           else
             SizedBox(
-              height: 140,
+              height: 150,
               child: Stack(
                 children: [
                   Positioned(
