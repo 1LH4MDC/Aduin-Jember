@@ -7,7 +7,7 @@ import '../../services/gawat_service.dart';
 import '../../services/sambat_service.dart';
 import '../../services/woro_service.dart';
 import '../auth/login_page.dart'; // Import untuk fungsi logout
-import 'profile_admin_page.dart'; // Import untuk halaman profil admin
+// Import untuk halaman profil admin
 import 'users_admin.dart';
 
 class DashboardAdmin extends StatefulWidget {
@@ -136,20 +136,6 @@ class _DashboardAdminState extends State<DashboardAdmin> {
         backgroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
-        // PERBAIKAN 1: Ikon Profil di kiri atas
-        leading: IconButton(
-          icon: const Icon(
-            Icons.account_circle_outlined,
-            color: AppTheme.primaryColor,
-            size: 28,
-          ),
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const ProfileAdminPage()),
-            ).then((_) => _loadData());
-          },
-        ),
         title: const Text(
           'Aduin Jember Admin',
           style: TextStyle(
