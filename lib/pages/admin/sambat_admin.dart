@@ -121,7 +121,6 @@ class _SambatAdminPageState extends State<SambatAdminPage> {
     final sambatId = (sambat['idSambat'] ?? sambat['id'] ?? '').toString();
     final currentStatus = _normalizeStatus(sambat['status']?.toString());
     String statusSelected = currentStatus;
-    final noteController = TextEditingController(text: sambat['catatan']?.toString() ?? '');
     bool isSaving = false;
 
     showModalBottomSheet(
@@ -190,20 +189,6 @@ class _SambatAdminPageState extends State<SambatAdminPage> {
                       border: OutlineInputBorder(),
                     ),
                   ),
-                  const SizedBox(height: 16),
-
-                  // Catatan Admin
-                  TextField(
-                    controller: noteController,
-                    maxLines: 3,
-                    enabled: !isSaving,
-                    decoration: const InputDecoration(
-                      labelText: 'Catatan Admin (Opsional)',
-                      hintText: 'Tuliskan alasan penolakan, update penanganan, dll.',
-                      border: OutlineInputBorder(),
-                      alignLabelWithHint: true,
-                    ),
-                  ),
                   const SizedBox(height: 24),
 
                   // Tombol Simpan
@@ -221,7 +206,6 @@ class _SambatAdminPageState extends State<SambatAdminPage> {
                                 await sambatService.updateStatus(
                                   sambatId: sambatId,
                                   status: _statusToApiValue(statusSelected),
-                                  catatan: noteController.text.trim(),
                                 );
 
                                 if (context.mounted) {

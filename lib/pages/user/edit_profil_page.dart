@@ -13,11 +13,7 @@ class EditProfilPage extends StatefulWidget {
 class _EditProfilPageState extends State<EditProfilPage> {
   final _namaController = TextEditingController();
   final _nikController = TextEditingController();
-  final _oldPasswordController = TextEditingController();
-  final _newPasswordController = TextEditingController();
 
-  bool _isObscureOld = true;
-  bool _isObscureNew = true;
   bool _isLoading = false;
   bool _initialized = false;
 
@@ -41,8 +37,6 @@ class _EditProfilPageState extends State<EditProfilPage> {
   void dispose() {
     _namaController.dispose();
     _nikController.dispose();
-    _oldPasswordController.dispose();
-    _newPasswordController.dispose();
     super.dispose();
   }
 
@@ -262,46 +256,6 @@ class _EditProfilPageState extends State<EditProfilPage> {
                       hint: 'Masukkan NIK (16 digit)',
                       controller: _nikController,
                       keyboardType: TextInputType.number,
-                    ),
-
-                    const SizedBox(height: 8),
-                    const Divider(color: Color(0xFFE0E0E0), thickness: 1),
-                    const SizedBox(height: 16),
-
-                    const Text(
-                      'Keamanan Akun',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: AppTheme.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    const Text(
-                      'Kosongkan jika tidak ingin mengubah kata sandi',
-                      style: TextStyle(fontSize: 12, color: Colors.grey),
-                    ),
-                    const SizedBox(height: 16),
-
-                    _buildInputCard(
-                      label: 'Kata Sandi Saat Ini',
-                      hint: 'Masukkan kata sandi lama',
-                      controller: _oldPasswordController,
-                      isPassword: true,
-                      isObscure: _isObscureOld,
-                      onToggleObscure: () {
-                        setState(() => _isObscureOld = !_isObscureOld);
-                      },
-                    ),
-                    _buildInputCard(
-                      label: 'Kata Sandi Baru',
-                      hint: 'Masukkan kata sandi baru',
-                      controller: _newPasswordController,
-                      isPassword: true,
-                      isObscure: _isObscureNew,
-                      onToggleObscure: () {
-                        setState(() => _isObscureNew = !_isObscureNew);
-                      },
                     ),
                   ],
                 ),
