@@ -4,22 +4,30 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../core/app_config.dart';
 import 'api_client.dart';
 
+// kelas ini ngatur state autentikasi user, profil, login, register, dan upload foto profil
 class AuthController extends ChangeNotifier {
   AuthController({ApiClient? apiClient})
     : apiClient = apiClient ?? ApiClient() {
+    // pas pertama kali dibuat, langsung jalanin bootstrap buat ngecek token lama
     _bootstrap();
   }
 
   final ApiClient apiClient;
 
+  // nyimpen data profil user berupa map key-value
   Map<String, dynamic>? profile;
+  // buat nandain apa aplikasi lagi nyari status login atau loading di awal
   bool isLoading = true;
+  // buat nandain apa ada proses request api yang lagi jalan (biar tombol ga bisa diclick dobel)
   bool isBusy = false;
+  // buat nyimpen pesan error kalau request gagal
   String? errorMessage;
 
+  // helper buat ngecek apa user udah login (punya token)
   bool get isAuthenticated =>
       apiClient.token != null && apiClient.token!.isNotEmpty;
 
+  // helper buat ngecek apa user login sebagai admin
   bool get isAdmin {
     final value =
         profile?['is_admin'] ?? profile?['isAdmin'] ?? profile?['role'];
@@ -29,6 +37,7 @@ class AuthController extends ChangeNotifier {
     return value?.toString().toLowerCase() == 'admin';
   }
 
+  // helper buat ngambil nama tampilan user dengan berbagai fallback field
   String get displayName {
     final candidates = [
       profile?['nama'],
@@ -50,23 +59,28 @@ class AuthController extends ChangeNotifier {
     return 'Pengguna';
   }
 
+  // ambil email user
   String get email => (profile?['email'] ?? '').toString();
 
+  // ambil id user unik
   String get userId =>
       (profile?['idUser'] ?? profile?['id'] ?? profile?['user_id'] ?? '')
           .toString();
 
+  // fungsi bootstrap buat ngembaliin session lama pas app baru dibuka
   Future<void> _bootstrap() async {
     isLoading = true;
     notifyListeners();
 
     try {
+      // coba ambil token lama dari shared preferences
       await apiClient.restoreToken();
       if (apiClient.token == null || apiClient.token!.isEmpty) {
         profile = null;
         return;
       }
 
+      // kalau tokennya ada, langsung load profile terbarunya
       await loadProfile();
     } catch (error) {
       errorMessage = error.toString();
@@ -78,15 +92,14 @@ class AuthController extends ChangeNotifier {
     }
   }
 
+  // ambil profil detail user dari backend
   Future<void> loadProfile() async {
     final response = await apiClient.getJson('/api/profil');
-    // Gunakan _readProfile() agar field role/is_admin/isAdmin dari response
-    // parent juga di-merge ke dalam profile, konsisten dengan behavior signIn()
-    // _extractDataMap() hanya mengambil response['data'] tanpa field admin
     final data = _extractDataMap(response);
     profile = _readProfile(data) ?? data;
   }
 
+  // update nama dan nik ke database backend
   Future<void> updateProfile({
     required String nama,
     required String nik,
@@ -103,7 +116,7 @@ class AuthController extends ChangeNotifier {
         body: {
           'nama': nama.trim(),
           'nik': nik.trim(),
-          'fotoProfil': ?fotoProfil,
+          'fotoProfil': fotoProfil,
         },
       );
       await loadProfile();
@@ -116,8 +129,7 @@ class AuthController extends ChangeNotifier {
     }
   }
 
-  /// Upload foto profil ke Supabase bucket "foto-profil",
-  /// lalu simpan public URL-nya ke API /api/profil.
+  // upload foto baru ke supabase storage bucket 'foto-profil' terus update url-nya ke backend
   Future<String> uploadProfilePhoto({
     required Uint8List imageBytes,
     required String imageName,
@@ -132,7 +144,7 @@ class AuthController extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // 1. Upload gambar ke Supabase Storage
+      // 1. bikin path object unik di supabase storage
       final safeName = imageName.trim().isEmpty
           ? 'profil.jpg'
           : imageName.trim().replaceAll(RegExp(r'[^A-Za-z0-9._-]'), '_');
@@ -140,17 +152,18 @@ class AuthController extends ChangeNotifier {
           'profil/${DateTime.now().millisecondsSinceEpoch}_$safeName';
       final storage = Supabase.instance.client.storage.from('foto-profil');
 
+      // 2. upload data binary gambar
       await storage.uploadBinary(objectPath, imageBytes);
       final publicUrl = storage.getPublicUrl(objectPath);
 
-      // 2. Simpan URL ke backend via PATCH /api/profil
+      // 3. simpan url foto ke backend via patch
       await apiClient.patchJson(
         '/api/profil',
         authenticated: true,
         body: {'fotoProfil': publicUrl},
       );
 
-      // 3. Reload profil agar UI langsung update
+      // reload profil terbaru
       await loadProfile();
 
       return publicUrl;
@@ -163,6 +176,7 @@ class AuthController extends ChangeNotifier {
     }
   }
 
+  // fungsi buat login pake email dan password
   Future<void> signIn({required String email, required String password}) async {
     isBusy = true;
     errorMessage = null;
@@ -181,6 +195,7 @@ class AuthController extends ChangeNotifier {
         throw Exception('Token login tidak ditemukan pada response.');
       }
 
+      // simpan token ke local storage
       await apiClient.setToken(token);
       profile = _readProfile(data);
       if (profile == null) {
@@ -195,6 +210,7 @@ class AuthController extends ChangeNotifier {
     }
   }
 
+  // fungsi buat daftar akun baru
   Future<void> signUp({
     required String fullName,
     required String email,
@@ -235,6 +251,7 @@ class AuthController extends ChangeNotifier {
     }
   }
 
+  // fungsi buat logout (bersihin data profil dan token dari memori & storage)
   Future<void> signOut() async {
     isBusy = true;
     notifyListeners();
@@ -249,6 +266,7 @@ class AuthController extends ChangeNotifier {
     }
   }
 
+  // ekstraksi map data dari response api biar seragam
   Map<String, dynamic> _extractDataMap(dynamic response) {
     if (response is Map<String, dynamic>) {
       final data = response['data'];
@@ -261,6 +279,7 @@ class AuthController extends ChangeNotifier {
     return <String, dynamic>{};
   }
 
+  // nyari token di response backend dengan berbagai opsi key
   String? _readToken(Map<String, dynamic> data) {
     final tokenCandidates = [
       data['accessToken'],
@@ -279,6 +298,7 @@ class AuthController extends ChangeNotifier {
     return null;
   }
 
+  // nyari map profil di response backend dengan berbagai opsi key
   Map<String, dynamic>? _readProfile(Map<String, dynamic> data) {
     final candidates = [data['profile'], data['profil'], data['user'], data];
 
@@ -291,7 +311,7 @@ class AuthController extends ChangeNotifier {
       }
 
       if (profileMap != null) {
-        // Menyisipkan field role/admin dari data luar ke profil jika belum ada
+        // selipin data role/admin dari response luar ke map profile
         if (data['role'] != null && !profileMap.containsKey('role')) {
           profileMap['role'] = data['role'];
         }
