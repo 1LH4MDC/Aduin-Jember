@@ -5,16 +5,19 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../core/app_config.dart';
 import 'api_client.dart';
 
+// service ini ngatur postingan pengumuman atau info penting kabupaten (woro-woro)
 class WoroService {
   final ApiClient _apiClient;
 
   WoroService({ApiClient? apiClient}) : _apiClient = apiClient ?? ApiClient();
 
+  // ambil semua daftar pengumuman yang ada di database backend
   Future<List<Map<String, dynamic>>> fetchWoro() async {
     final response = await _apiClient.getJson('/api/woro-woro', authenticated: true);
     return _toMapList(_readDataList(response));
   }
 
+  // bikin pengumuman baru (khusus admin)
   Future<Map<String, dynamic>> createWoro({
     required String judul,
     required String konten,
@@ -28,12 +31,13 @@ class WoroService {
         'judul': judul,
         'konten': konten,
         'kategori': kategori,
-        'fotoUrl': ?fotoUrl,
+        'fotoUrl': fotoUrl,
       },
     );
     return _readDataMap(response);
   }
 
+  // update isi atau banner poster pengumuman yang udah ada (khusus admin)
   Future<Map<String, dynamic>> updateWoro(
     String idWoro, {
     required String judul,
@@ -48,16 +52,18 @@ class WoroService {
         'judul': judul,
         'konten': konten,
         'kategori': kategori,
-        'fotoUrl': ?fotoUrl,
+        'fotoUrl': fotoUrl,
       },
     );
     return _readDataMap(response);
   }
 
+  // hapus postingan pengumuman berdasarkan id (khusus admin)
   Future<void> deleteWoro(String idWoro) async {
     await _apiClient.deleteJson('/api/woro-woro/$idWoro', authenticated: true);
   }
 
+  // upload gambar poster pengumuman ke supabase storage bucket 'foto-woro'
   Future<String> uploadWoroImage({
     required Uint8List imageBytes,
     required String imageName,
@@ -78,11 +84,13 @@ class WoroService {
     return storage.getPublicUrl(objectPath);
   }
 
+  // helper konversi list data map
   List<Map<String, dynamic>> _toMapList(dynamic data) {
     final list = (data as List).cast<dynamic>();
     return list.map((item) => Map<String, dynamic>.from(item as Map)).toList();
   }
 
+  // helper parsing list dari response
   List<dynamic> _readDataList(dynamic response) {
     if (response is Map<String, dynamic>) {
       final data = response['data'];
@@ -101,6 +109,7 @@ class WoroService {
     return <dynamic>[];
   }
 
+  // helper parsing map dari response
   Map<String, dynamic> _readDataMap(dynamic response) {
     if (response is Map<String, dynamic>) {
       final data = response['data'];
