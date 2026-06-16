@@ -23,12 +23,14 @@ Future<void> main() async {
     );
   }
 
-  runApp(
-    DevicePreview(
-      enabled: !kReleaseMode,
-      builder: (context) => const AduinJemberApp(),
-    ),
-  );
+//   runApp(
+//     // DevicePreview(
+//     //   enabled: !kReleaseMode,
+//     //   builder: (context) => const AduinJemberApp(),
+//     // ),
+//   );
+// }
+  runApp(const AduinJemberApp());
 }
 
 class AduinJemberApp extends StatelessWidget {
