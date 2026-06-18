@@ -143,14 +143,16 @@ class _GawatAdminPageState extends State<GawatAdminPage> {
     }
   }
 
+  // nilai yang dikirim ke api harus persis sama dengan validasi backend
+  // backend: ["Mencari Bantuan", "Ditangani", "Selesai"]
   String _statusToApiValue(String status) {
     switch (status) {
       case 'Ditangani':
-        return 'ditangani';
+        return 'Ditangani';
       case 'Selesai':
-        return 'selesai';
+        return 'Selesai';
       default:
-        return 'mencari bantuan';
+        return 'Mencari Bantuan';
     }
   }
 
@@ -204,7 +206,7 @@ class _GawatAdminPageState extends State<GawatAdminPage> {
                   ),
                   const SizedBox(height: 16),
 
-                  // Dropdown/Selector Status
+                  // dropdown pilihan status yang tersedia
                   DropdownButtonFormField<String>(
                     initialValue: statusSelected,
                     items: ['Mencari Bantuan', 'Ditangani', 'Selesai']

@@ -1,5 +1,3 @@
-import 'package:device_preview/device_preview.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -27,13 +25,8 @@ Future<void> main() async {
     );
   }
 
-  // jalanin root widget aplikasi yang dibungkus device preview biar gampang simulasiin layout hp
-  runApp(
-    DevicePreview(
-      enabled: !kReleaseMode,
-      builder: (context) => const AduinJemberApp(),
-    ),
-  );
+  // jalanin root widget aplikasi
+  runApp(const AduinJemberApp());
 }
 
 // ini widget utama/root dari aplikasi aduin jember
@@ -46,9 +39,6 @@ class AduinJemberApp extends StatelessWidget {
     return ChangeNotifierProvider(
       create: (_) => AuthController(),
       child: MaterialApp(
-        // sinkronisasi setelan bahasa dan builder aplikasi sama device preview
-        locale: DevicePreview.locale(context),
-        builder: DevicePreview.appBuilder,
         title: 'Aduin Jember',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.lightTheme,
